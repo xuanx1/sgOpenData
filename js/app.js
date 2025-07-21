@@ -1,8 +1,3 @@
-import * as d3 from "d3";
-import "leaflet";
-import 'leaflet.markercluster';
-
-
 // Initialize app container
 const app = d3.select("#app")
   .html("")

@@ -1,8 +1,3 @@
-import * as d3 from "d3";
-import "leaflet";
-import 'leaflet.markercluster';
-
-
 // Initialize app2 container (second map)
 const app2 = d3.select("#app2")
   .html("")
