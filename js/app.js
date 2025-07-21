@@ -101,7 +101,6 @@ const getCarparksData = async () => {
       // Find indices for the columns we need
       const carParkNoIdx = headers.findIndex(h => h.trim().toLowerCase() === 'car_park_no');
       const weekdaysRate1Idx = headers.findIndex(h => h.trim().toLowerCase() === 'weekdays_rate_1');
-      const weekdaysRate2Idx = headers.findIndex(h => h.trim().toLowerCase() === 'weekdays_rate_2');
       const saturdayRateIdx = headers.findIndex(h => h.trim().toLowerCase() === 'saturday_rate');
       const sundayRateIdx = headers.findIndex(h => h.trim().toLowerCase() === 'sunday_publicholiday_rate');
       
@@ -112,14 +111,12 @@ const getCarparksData = async () => {
         const values = lines[i].split(',');
         const carParkNo = values[carParkNoIdx]?.trim();
         const weekdaysRate1 = values[weekdaysRate1Idx]?.trim() || '-';
-        const weekdaysRate2 = values[weekdaysRate2Idx]?.trim() || '-';
         const saturdayRate = values[saturdayRateIdx]?.trim() || '-';
         const sundayRate = values[sundayRateIdx]?.trim() || '-';
         
         if (carParkNo) {
           carparkRates[carParkNo] = { 
             weekdays1: weekdaysRate1 === '-' ? 'N/A' : weekdaysRate1,
-            weekdays2: weekdaysRate2 === '-' ? 'N/A' : weekdaysRate2,
             saturday: saturdayRate === '-' ? 'N/A' : saturdayRate,
             sunday: sundayRate === '-' ? 'N/A' : sundayRate
           };
@@ -241,7 +238,6 @@ const refreshCarparksData = async () => {
             <b>Parking Rates:</b><br>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 4px;">
               <div><strong>Weekdays 1:</strong> ${cp.rates.weekdays1}</div>
-              <div><strong>Weekdays 2:</strong> ${cp.rates.weekdays2}</div>
               <div><strong>Saturday:</strong> ${cp.rates.saturday}</div>
               <div><strong>Sun/Holiday:</strong> ${cp.rates.sunday}</div>
             </div>
@@ -273,7 +269,7 @@ const refreshCarparksData = async () => {
     if (statusElement) {
       const now = new Date();
       const nextCarparksUpdate = new Date(now.getTime() + 60000);
-      statusElement.innerHTML = `Carpark data: Last updated ${now.toLocaleTimeString()} • Next update ${nextCarparksUpdate.toLocaleTimeString()}<br>Traffic cameras refresh every 2 minutes`;
+      statusElement.innerHTML = `Carpark data: Last updated ${now.toLocaleTimeString()} • Next update ${nextCarparksUpdate.toLocaleTimeString()}. Traffic cameras refresh every 2 minutes`;
     }
   } catch (error) {
     console.error("Error refreshing carpark data:", error);
