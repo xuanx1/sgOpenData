@@ -18,7 +18,7 @@ app2.append("h1")
   .style("color", "#eee")
   .style("font-size", "1.2rem")
   .style("margin-bottom", "12px")
-  .text("👨‍👨‍👦‍👦 Where's Everyone At?");
+  .text("🚕 Where's My Taxi?");
 
 // Map container for second map
 const mapElement2 = app2.append("div")
@@ -260,7 +260,7 @@ app2.append("p")
 
 // Made with love footer for second map
 app2.append("p")
-  .style("color", "#666")
+  .style("color", "#c9c9c9ff")
   .style("font-size", "0.75rem")
   .style("margin-top", "20px")
   .style("text-align", "center")

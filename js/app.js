@@ -17,7 +17,7 @@ app.append("h1")
   .style("color", "#eee")
   .style("font-size", "1.2rem")
   .style("margin-bottom", "12px")
-  .text("🚘 Singapore Parking-Traffic Map");
+  .text("🚘 Singapore HDB Parking-Traffic Map");
 
 // Map container
 const mapElement = app.append("div")
@@ -71,7 +71,9 @@ const getCarparksData = async () => {
         const carParkNo = values[carParkNoIdx]?.trim();
         const lat = parseFloat(values[latIdx]);
         const lng = parseFloat(values[lngIdx]);
-        const address = addressIdx !== -1 ? values[addressIdx]?.trim() : 'Address not available';
+        const address = addressIdx !== -1 && values[addressIdx]?.trim() 
+                ? values[addressIdx].trim() 
+                : `Approximate location at coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
         
         if (carParkNo && !isNaN(lat) && !isNaN(lng)) {
           carparkInfo[carParkNo] = { lat, lng, address };
@@ -126,10 +128,39 @@ const getCarparksData = async () => {
     // Process carpark data
     const carparks = data.items[0].carpark_data.map(carpark => {
       const carparkInfo_data = carpark.carpark_info[0];
-      const info = carparkInfo[carpark.carpark_number] || 
-                 { lat: 1.3521 + (Math.random() - 0.5) * 0.1, 
-                   lng: 103.8198 + (Math.random() - 0.5) * 0.1,
-                   address: 'Address not available' };
+      const info = carparkInfo[carpark.carpark_number] || (() => {
+        // Generate random coordinates near Singapore if not found
+        const lat = 1.3521 + (Math.random() - 0.5) * 0.1;
+        const lng = 103.8198 + (Math.random() - 0.5) * 0.1;
+        
+        // Approximate address based on coordinates
+        return {
+          lat,
+          lng,
+          address: (() => {
+            // Identify Singapore region based on coordinates
+            const getSingaporeRegion = (lat, lng) => {
+              // Simple region identification based on coordinates
+              if (lat > 1.38) return "North";
+              if (lat < 1.27) return "South";
+              if (lng > 103.9) return "East";
+              if (lng < 103.7) return "West";
+              
+              // Central regions with more detail
+              if (lat > 1.34 && lng > 103.85) return "North-East";
+              if (lat > 1.34 && lng < 103.85) return "North-West";
+              if (lat < 1.34 && lat > 1.29 && lng > 103.85) return "East";
+              if (lat < 1.34 && lat > 1.29 && lng < 103.85) return "Central";
+              if (lat < 1.29 && lng > 103.85) return "South-East";
+              if (lat < 1.29 && lng < 103.85) return "South-West";
+              
+              return "Central";
+            };
+            
+            return `Location in ${getSingaporeRegion(lat, lng)} Singapore (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+          })()
+        };
+      })();
       
       const rates = carparkRates[carpark.carpark_number] || 
                   { weekdays: 'N/A', saturday: 'N/A', sunday: 'N/A' };
@@ -310,15 +341,15 @@ const refreshCarparksData = async () => {
           <table style="width: 100%; font-size: 0.85em;">
             <tr>
               <td style="padding: 2px 0;"><b>Weekdays:</b></td>
-              <td style="padding: 2px 0;">$0.60 / 30 min</td>
+              <td style="padding: 2px 0;">60¢ / 30 min</td>
             </tr>
             <tr>
               <td style="padding: 2px 0;"><b>Saturday:</b></td>
-              <td style="padding: 2px 0;">$0.60 / 30 min</td>
+              <td style="padding: 2px 0;">60¢ / 30 min</td>
             </tr>
             <tr>
               <td style="padding: 2px 0;"><b>Sun/Holiday:</b></td>
-              <td style="padding: 2px 0;">$0.60 / 30 min</td>
+              <td style="padding: 2px 0;">60¢ / 30 min</td>
             </tr>
           </table>
           <br>
@@ -327,15 +358,15 @@ const refreshCarparksData = async () => {
           <table style="width: 100%; font-size: 0.85em;">
             <tr>
               <td style="padding: 2px 0;"><b>Weekdays:</b></td>
-              <td style="padding: 2px 0;">$0.20 / 60 min</td>
+              <td style="padding: 2px 0;">20¢ / 60 min</td>
             </tr>
             <tr>
               <td style="padding: 2px 0;"><b>Saturday:</b></td>
-              <td style="padding: 2px 0;">$0.20 / 60 min</td>
+              <td style="padding: 2px 0;">20¢ / 60 min</td>
             </tr>
             <tr>
               <td style="padding: 2px 0;"><b>Sun/Holiday:</b></td>
-              <td style="padding: 2px 0;">$0.20 / 60 min</td>
+              <td style="padding: 2px 0;">20¢ / 60 min</td>
             </tr>
           </table>
         </div>
@@ -537,7 +568,10 @@ const fetchCameraTimestamp = async () => {
     if (data && data.items && data.items[0] && data.items[0].cameras && data.items[0].cameras.length > 0) {
       const timestamp = data.items[0].cameras[0].timestamp;
       const formattedTime = new Date(timestamp).toLocaleString();
-      cameraTimestampDisplay.html(`Navigate Singapore's urban landscape with this comprehensive traffic and parking tool, providing real-time data on carpark availability, traffic conditions via live cameras, and road congestion levels. Toggle between different information layers using the buttons below to customize your view and make informed travel decisions across the city. Accurate as at <span style="color:#e74c3c;font-weight:bold">${formattedTime}</span>`);
+      const cameraCount = data.items[0].cameras.length;
+      const carparkCount = carparks.length || 0;
+      
+      cameraTimestampDisplay.html(`Navigate Singapore's urban landscape with this comprehensive traffic and parking tool, providing real-time data on <span style="color:#0787ff;font-weight:bold">${carparkCount} </span> HDB carparks and <span style="color:#e74c3c;font-weight:bold">${cameraCount}</span> traffic cameras. Toggle between different information layers using the buttons below to customize your view and make informed travel decisions across the city. Accurate as at <span style="color:#00be9d;font-weight:bold">${formattedTime}</span>`);
     } else {
       cameraTimestampDisplay.text("No traffic camera data available");
     }
@@ -547,8 +581,19 @@ const fetchCameraTimestamp = async () => {
   }
 };
 
-// Fetch the camera timestamp
-fetchCameraTimestamp();
+// Call fetchCameraTimestamp after carparks data is loaded
+(async () => {
+  // Wait for carparks data to be loaded
+  const checkCarparksLoaded = () => {
+    if (carparks && carparks.length > 0) {
+      fetchCameraTimestamp();
+    } else {
+      setTimeout(checkCarparksLoaded, 1000); // Check again in 1 second
+    }
+  };
+  
+  checkCarparksLoaded();
+})();
 
 
 
