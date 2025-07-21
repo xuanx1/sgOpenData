@@ -1,0 +1,19 @@
+{
+    "name": "default-template",
+    "version": "1.0.0",
+    "description": "",
+    "main": "app.js",
+    "scripts": {
+        "dev": "vite",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "d3": "^7.9.0",
+        "leaflet": "^1.9.4",
+        "leaflet.markercluster": "^1.5.3",
+        "vite": "^5.4.2"
+    }
+}
