@@ -292,7 +292,7 @@ const refreshCarparksData = async () => {
     const popup = `
       <div style="min-width: 220px">
         <b>${cp.name}</b>
-        <p style="margin: 5px 0; font-size: 0.9em;">${cp.address}</p>
+        <p style="margin: 5px 0; font-size: 0.9em; color: #818181ff">${cp.address}</p>
         <div style="margin: 8px 0;">
           <div style="display: flex; align-items: center; gap: 5px;">
             <div style="flex-grow: 1; background-color: #eee; height: 10px; border-radius: 5px;">
@@ -300,24 +300,42 @@ const refreshCarparksData = async () => {
             </div>
             <span style="color: ${barColor}; font-weight: bold;">${availabilityPercent}%</span>
           </div>
-          <div style="margin-top: 5px;">
+          <div style="margin-top: 5px; color: #818181ff">
             Lots Available: ${cp.lots} / ${cp.total}
           </div>
         </div>
         <div style="margin-top: 8px; border-top: 1px solid #eee; padding-top: 8px;">
-          <h4 style="margin: 0 0 5px 0; font-size: 0.9em;">Parking Rates:</h4>
+          <h4 style="margin: 0 0 5px 0; font-size: 1em; color: #818181ff;">Parking Rates:</h4>          <br>
+          <h4 style="margin: 0 0 5px 0; font-size: 0.9em; color: #ff7300ff">Motor Car</h4>
           <table style="width: 100%; font-size: 0.85em;">
             <tr>
               <td style="padding: 2px 0;"><b>Weekdays:</b></td>
-              <td style="padding: 2px 0;">${cp.rates.weekdays}</td>
+              <td style="padding: 2px 0;">$0.60 / 30 min</td>
             </tr>
             <tr>
               <td style="padding: 2px 0;"><b>Saturday:</b></td>
-              <td style="padding: 2px 0;">${cp.rates.saturday}</td>
+              <td style="padding: 2px 0;">$0.60 / 30 min</td>
             </tr>
             <tr>
               <td style="padding: 2px 0;"><b>Sun/Holiday:</b></td>
-              <td style="padding: 2px 0;">${cp.rates.sunday}</td>
+              <td style="padding: 2px 0;">$0.60 / 30 min</td>
+            </tr>
+          </table>
+          <br>
+          <h4 style="margin: 0 0 2px 0; font-size: 0.9em; color: #ff7300ff">Motorcycle</h4>
+
+          <table style="width: 100%; font-size: 0.85em;">
+            <tr>
+              <td style="padding: 2px 0;"><b>Weekdays:</b></td>
+              <td style="padding: 2px 0;">$0.20 / 60 min</td>
+            </tr>
+            <tr>
+              <td style="padding: 2px 0;"><b>Saturday:</b></td>
+              <td style="padding: 2px 0;">$0.20 / 60 min</td>
+            </tr>
+            <tr>
+              <td style="padding: 2px 0;"><b>Sun/Holiday:</b></td>
+              <td style="padding: 2px 0;">$0.20 / 60 min</td>
             </tr>
           </table>
         </div>
