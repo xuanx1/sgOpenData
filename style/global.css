@@ -30,3 +30,53 @@ body {
 .tns-icon-marker {
     border-radius: 999px;
 }
+
+/* Lamp Post Visualization Styles */
+.lamp-marker {
+    pointer-events: auto;
+}
+
+.lamp-popup .leaflet-popup-content-wrapper {
+    background: #1a1a1a !important;
+    color: #eee !important;
+    border-radius: 8px !important;
+    border: 1px solid #ffeb3b !important;
+}
+
+.lamp-popup .leaflet-popup-tip {
+    background: #1a1a1a !important;
+    border: 1px solid #ffeb3b !important;
+}
+
+/* Container layouts */
+#container3a {
+    width: 100%;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 50%, #0a0a0a 100%);
+    margin: 0;
+    padding: 0;
+}
+
+/* Smooth transitions for interactive elements */
+button {
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    transform: translateY(-2px);
+}
+
+/* Dark theme adjustments */
+.dark-overlay {
+    mix-blend-mode: multiply;
+}
+
+@keyframes lampGlow {
+    0% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 0.8; transform: scale(1); }
+}
+
+.lamp-glow {
+    animation: lampGlow 3s ease-in-out infinite;
+}
