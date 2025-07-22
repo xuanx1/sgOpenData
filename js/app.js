@@ -85,45 +85,7 @@ const getCarparksData = async () => {
       console.error("Error loading carpark data from CSV:", error);
     }
     
-    // Load carpark rates
-    let carparkRates = {};
-    try {
-      const rateResponse = await fetch('data/CarparkRates.csv');
-      const rateText = await rateResponse.text();
-      
-      // Parse CSV
-      const lines = rateText.split('\n');
-      const headers = lines[0].split(',');
-      
-      // Find indices for the columns we need
-      const carParkNoIdx = headers.findIndex(h => h.trim().toLowerCase() === 'car_park_no');
-      const weekdaysRate1Idx = headers.findIndex(h => h.trim().toLowerCase() === 'weekdays_rate_1');
-      const saturdayRateIdx = headers.findIndex(h => h.trim().toLowerCase() === 'saturday_rate');
-      const sundayRateIdx = headers.findIndex(h => h.trim().toLowerCase() === 'sunday_publicholiday_rate');
-      
-      // Process each line to create mapping
-      for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue; // Skip empty lines
-        
-        const values = lines[i].split(',');
-        const carParkNo = values[carParkNoIdx]?.trim();
-        const weekdaysRate1 = values[weekdaysRate1Idx]?.trim() || '-';
-        const saturdayRate = values[saturdayRateIdx]?.trim() || '-';
-        const sundayRate = values[sundayRateIdx]?.trim() || '-';
-        
-        if (carParkNo) {
-          carparkRates[carParkNo] = { 
-            weekdays1: weekdaysRate1 === '-' ? 'N/A' : weekdaysRate1,
-            saturday: saturdayRate === '-' ? 'N/A' : saturdayRate,
-            sunday: sundayRate === '-' ? 'N/A' : sundayRate
-          };
-        }
-      }
-      
-      console.log(`Loaded rates for ${Object.keys(carparkRates).length} carparks`);
-    } catch (error) {
-      console.error("Error loading carpark rates:", error);
-    }
+    // Note: Using hardcoded rates as they are standardized across HDB carparks
     
     // Process carpark data
     const carparks = data.items[0].carpark_data.map(carpark => {
@@ -162,8 +124,7 @@ const getCarparksData = async () => {
         };
       })();
       
-      const rates = carparkRates[carpark.carpark_number] || 
-                  { weekdays: 'N/A', saturday: 'N/A', sunday: 'N/A' };
+      // Note: Using hardcoded rates as they are standardized across HDB carparks
       
       return {
         name: `Carpark ${carpark.carpark_number}`,
@@ -172,8 +133,7 @@ const getCarparksData = async () => {
         address: info.address,
         lots: parseInt(carparkInfo_data.lots_available) || 0,
         total: parseInt(carparkInfo_data.total_lots) || 0,
-        lastUpdated: carpark.update_datetime,
-        rates
+        lastUpdated: carpark.update_datetime
       };
     });
     
@@ -263,9 +223,8 @@ const refreshCarparksData = async () => {
           <div style="margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 0.85em;">
             <b>Parking Rates:</b><br>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 4px;">
-              <div><strong>Weekdays 1:</strong> ${cp.rates.weekdays1}</div>
-              <div><strong>Saturday:</strong> ${cp.rates.saturday}</div>
-              <div><strong>Sun/Holiday:</strong> ${cp.rates.sunday}</div>
+              <div><strong>Motor Car:</strong> 60¢ / 30 min</div>
+              <div><strong>Motorcycle:</strong> 20¢ / 60 min</div>
             </div>
           </div>
           
