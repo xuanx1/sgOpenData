@@ -322,7 +322,7 @@ const refreshCarparksData = async () => {
     // Create popup with availability info, progress bar, and parking rates
     const popup = `
       <div style="min-width: 220px">
-        <b>${cp.name}</b>
+        <b>🅿️ ${cp.name}</b>
         <p style="margin: 5px 0; font-size: 0.9em; color: #818181ff">${cp.address}</p>
         <div style="margin: 8px 0;">
           <div style="display: flex; align-items: center; gap: 5px;">
@@ -433,7 +433,9 @@ const fetchTrafficCameras = async () => {
   data.items[0].cameras.forEach(cam => {
     const marker = L.marker([cam.location.latitude, cam.location.longitude], {icon: cameraIcon});
     const popup = `<div>
-      <b>Location:</b> <span id="address-${cam.camera_id}">Loading address...</span><br/><br>
+      👀 Camera ID ${cam.camera_id}
+      <br>
+      <span id="address-${cam.camera_id}">Loading address...</span><br/><br>
       <small style="color: #666;">Image captured on ${new Date(cam.timestamp).toLocaleString()}</small><br/>
       <img src="${cam.image}" style="width:100%;border-radius:6px;"/>
     </div>`;
@@ -445,13 +447,13 @@ const fetchTrafficCameras = async () => {
       const data = await response.json();
       const address = data.display_name || "Address not found";
       const addressElement = document.getElementById(`address-${cam.camera_id}`);
-      addressElement.style.color = "#e74c3c"; // Grey color
-      addressElement.style.fontWeight = "normal"; // Ensure text is not bold
+      addressElement.style.color = "#e74c3c";
+      addressElement.style.fontWeight = "bold"; 
       addressElement.innerText = address;
       } catch (error) {
       const addressElement = document.getElementById(`address-${cam.camera_id}`);
-      addressElement.style.color = "#999"; // Grey color
-      addressElement.style.fontWeight = "normal"; // Ensure text is not bold
+      addressElement.style.color = "#999";
+      addressElement.style.fontWeight = "bold"; 
       addressElement.innerText = "Could not load address";
       console.error("Error fetching address:", error);
       }

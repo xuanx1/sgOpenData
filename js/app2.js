@@ -258,11 +258,3 @@ app2.append("p")
 
 
 
-// Made with love footer for second map
-app2.append("p")
-  .style("color", "#c9c9c9ff")
-  .style("font-size", "0.75rem")
-  .style("margin-top", "20px")
-  .style("text-align", "center")
-  .style("font-style", "italic")
-  .html("Made with ❤️ in NYC for &#127480;&#127468; Singapore");
