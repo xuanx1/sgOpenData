@@ -1,4 +1,5 @@
 # Exploring Singapore Open Data
+[Preview](https://xuanx1.github.io/sgOpenData/)
 <img width="1920" height="4613" alt="screencapture-localhost-5174-2025-07-21-23_37_48" src="https://github.com/user-attachments/assets/e440fee2-a104-4c4b-95f1-5b3abd020192" />
 
 🚘 Singapore HDB Parking-Traffic Map
