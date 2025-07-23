@@ -4,19 +4,19 @@
 
 // Usage: hierarchicalEdgeBundling('#network-graph4', nodes, links)
 
-// Category color scheme matching app4.js
+// Sophisticated contrasting color scheme - no primary colors
 const categoryColors = {
-    'politics': '#ff6b6b',      
-    'business': '#ecc542ff',     
-    'sports': '#16afd1ff',       
-    'technology': '#96ceb4',   
-    'health': '#ffeaa7',      
-    'entertainment': '#fd79a8', 
-    'science': '#a29bfe',   
-    'world': '#fd79a8',      
-    'opinion': '#74b9ff',    
-    'general': '#cfcfcfff',    
-    'default': '#00d6a1ff'  
+    'politics': '#fd5050ff',      // Crimson - Deep red, more sophisticated than pure red
+    'business': '#2F4F4F',      // Dark Slate Gray - Professional business color
+    'sports': '#4169E1',       // Royal Blue - Elegant blue, not pure
+    'technology': '#9370DB',   // Medium Purple - Refined purple shade
+    'health': '#228B22',       // Forest Green - Natural green, not neon
+    'entertainment': '#FFD700', // Gold - Luxurious yellow tone
+    'science': '#20B2AA',      // Light Sea Green - Sophisticated teal
+    'world': '#8B4513',        // Saddle Brown - Rich earth tone
+    'opinion': '#FF69B4',      // Hot Pink - Vibrant but not pure magenta
+    'general': '#927c54ff',      // Beige - Neutral, warm beige tone
+    'default': '#2F4F4F'       // Dark Slate Gray - Sophisticated fallback
 };
 
 // Make sure the function is globally available
@@ -229,6 +229,68 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
         
         console.log('Valid links:', validLinks.length, 'out of', links.length);
 
+        // Calculate connection density for heatmap
+        const connectionCounts = {};
+        
+        // Initialize all nodes with 0 connections
+        Object.keys(nodeById).forEach(nodeId => {
+            connectionCounts[nodeId] = 0;
+        });
+        
+        // Count connections for each node
+        validLinks.forEach(link => {
+            connectionCounts[link.source] = (connectionCounts[link.source] || 0) + 1;
+            connectionCounts[link.target] = (connectionCounts[link.target] || 0) + 1;
+        });
+        
+        // Find max connections for normalization
+        const maxConnections = Math.max(...Object.values(connectionCounts));
+        const minConnections = Math.min(...Object.values(connectionCounts).filter(count => count > 0));
+        
+        console.log('Connection density stats:', {
+            maxConnections,
+            minConnections,
+            totalNodes: Object.keys(connectionCounts).length,
+            connectedNodes: Object.values(connectionCounts).filter(count => count > 0).length
+        });
+        
+        // Function to calculate edge intensity based on connection density
+        const getEdgeIntensity = (sourceId, targetId) => {
+            const sourceConnections = connectionCounts[sourceId] || 0;
+            const targetConnections = connectionCounts[targetId] || 0;
+            
+            // Use the maximum connections between source and target for intensity
+            const maxNodeConnections = Math.max(sourceConnections, targetConnections);
+            
+            if (maxConnections === 0) return 0.5; // Fallback if no connections
+            
+            // Normalize to 0-1 range, then invert (more connections = lighter/more transparent)
+            const normalizedDensity = maxNodeConnections / maxConnections;
+            
+            // Invert: high density (many connections) = lower opacity (lighter)
+            // Map from [0,1] to [0.8, 0.2] - so high density nodes have lighter edges
+            const intensity = 0.8 - (normalizedDensity * 0.6);
+            
+            return Math.max(0.2, Math.min(0.8, intensity));
+        };
+        
+        // Function to get edge width based on connection density
+        const getEdgeWidth = (sourceId, targetId) => {
+            const sourceConnections = connectionCounts[sourceId] || 0;
+            const targetConnections = connectionCounts[targetId] || 0;
+            
+            // Use average connections for width
+            const avgConnections = (sourceConnections + targetConnections) / 2;
+            
+            if (maxConnections === 0) return 0.8; // Fallback
+            
+            // More connections = slightly thicker edges
+            const normalizedDensity = avgConnections / maxConnections;
+            const width = 0.6 + (normalizedDensity * 0.4); // Range from 0.6 to 1.0
+            
+            return width;
+        };
+
         // Create gradient definitions for cross-category connections
         const defs = svg.append('defs');
         
@@ -313,9 +375,9 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
                     }
                 })
                 .attr('stroke', d => getGradientId(d.source, d.target))
-                .attr('stroke-width', 0.8)
+                .attr('stroke-width', d => getEdgeWidth(d.source, d.target))
                 .attr('fill', 'none')
-                .attr('opacity', 0.5)
+                .attr('opacity', d => getEdgeIntensity(d.source, d.target))
                 .attr('class', 'edge-path');
         }
 
@@ -391,20 +453,26 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
         const updateEdgeStates = () => {
             if (validLinks.length > 0 && linkGroup) {
                 linkGroup.selectAll('path').attr('opacity', d => {
-                    if (!selectedNode) return 0.5; // No selection, normal opacity
+                    if (!selectedNode) {
+                        // No selection, use heatmap intensity
+                        return getEdgeIntensity(d.source, d.target);
+                    }
                     // Highlight edge only if it directly connects to the selected node
                     if (String(d.source) === String(selectedNode) || String(d.target) === String(selectedNode)) {
-                        return 0.8; // Highlighted edge
+                        return 0.9; // Highlighted edge (override heatmap)
                     }
                     return 0.1; // Dimmed edge
                 })
                 .attr('stroke-width', d => {
-                    if (!selectedNode) return 0.8; // No selection, normal width
+                    if (!selectedNode) {
+                        // No selection, use heatmap width
+                        return getEdgeWidth(d.source, d.target);
+                    }
                     // Thicker edge only if it directly connects to the selected node
                     if (String(d.source) === String(selectedNode) || String(d.target) === String(selectedNode)) {
-                        return 0.9; // Thicker highlighted edge
+                        return Math.max(1.2, getEdgeWidth(d.source, d.target)); // Ensure highlighted edges are thick
                     }
-                    return 0.5; // Thinner dimmed edge
+                    return Math.min(0.4, getEdgeWidth(d.source, d.target)); // Thinner dimmed edge
                 })
                 .attr('stroke', d => {
                     // Always use the gradient color
@@ -514,9 +582,17 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
                 const sentiment = (article && article.sentiment !== undefined) ? article.sentiment.toFixed(3) : 'N/A';
                 const category = d.parent ? d.parent.id : 'general';
                 
+                // Get connection density info
+                const nodeConnections = connectionCounts[nodeId] || 0;
+                const densityPercentage = maxConnections > 0 ? ((nodeConnections / maxConnections) * 100).toFixed(1) : '0';
+                const densityLabel = nodeConnections === 0 ? 'Isolated' : 
+                                   nodeConnections === 1 ? 'Low' :
+                                   nodeConnections <= maxConnections * 0.3 ? 'Medium' :
+                                   nodeConnections <= maxConnections * 0.6 ? 'High' : 'Very High';
+                
                 // Calculate tooltip position to avoid going off-screen
                 const tooltipWidth = 400;
-                const tooltipHeight = 120;
+                const tooltipHeight = 140; // Increased for connection info
                 let tooltipX = mouseX + 10;
                 let tooltipY = mouseY - 10;
                 
@@ -544,6 +620,10 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
                         </div>
                         <div style="margin-bottom: 4px;">
                             <strong>Category:</strong> <span style="color: ${categoryColors[category] || categoryColors['default']};">${category}</span>
+                        </div>
+                        <div style="margin-bottom: 4px;">
+                            <strong>Connections:</strong> <span style="color: #ffd93d;">${nodeConnections}</span> 
+                            <span style="color: #64ffda; font-size: 10px;">(${densityLabel} density: ${densityPercentage}%)</span>
                         </div>
                         <div style="margin-bottom: 6px;">
                             <strong>Sentiment:</strong> ${sentiment}
@@ -626,6 +706,15 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
         .style('padding', '10px')
         .style('backdrop-filter', 'blur(10px)');
     
+    // Add category legend
+    legend
+        .append('div')
+        .style('font-size', '12px')
+        .style('color', '#64ffda')
+        .style('font-weight', 'bold')
+        .style('margin-bottom', '8px')
+        .text('Categories');
+    
     legendData.forEach(([category, color]) => {
         const legendItem = legend
             .append('div')
@@ -648,6 +737,48 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
         legendItem
             .append('span')
             .text(category.charAt(0).toUpperCase() + category.slice(1));
+    });
+    
+    // Add connection density legend
+    legend
+        .append('div')
+        .style('margin-top', '12px')
+        .style('padding-top', '8px')
+        .style('border-top', '1px solid rgba(100, 255, 218, 0.2)')
+        .style('font-size', '12px')
+        .style('color', '#64ffda')
+        .style('font-weight', 'bold')
+        .style('margin-bottom', '8px')
+        .text('Connections Density');
+    
+    // Create density indicators
+    const densityLevels = [
+        { label: 'Low Density', opacity: 0.2, description: 'Few connections' },
+        { label: 'Medium Density', opacity: 0.5, description: 'Some connections' },
+        { label: 'High Density', opacity: 0.8, description: 'Many connections' }
+    ];
+    
+    densityLevels.forEach(level => {
+        const densityItem = legend
+            .append('div')
+            .style('display', 'flex')
+            .style('align-items', 'center')
+            .style('margin-bottom', '4px')
+            .style('font-size', '10px')
+            .style('color', '#ffffff');
+        
+        densityItem
+            .append('div')
+            .style('width', '20px')
+            .style('height', '2px')
+            .style('background-color', '#64ffda')
+            .style('opacity', level.opacity)
+            .style('margin-right', '8px')
+            .style('flex-shrink', '0');
+        
+        densityItem
+            .append('span')
+            .text(level.description);
     });
 };
 

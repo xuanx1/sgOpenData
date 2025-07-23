@@ -724,8 +724,14 @@
             }
         }
         
-        // Get data retrieval date from filename or current date
-        const dataRetrievalDate = "July 23, 2025"; // Based on the filename news_sg_20250723_032253.json
+        // Get current date for data retrieval
+        const now = new Date();
+        const dataRetrievalDate = now.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'long', 
+            year: 'numeric',
+            timeZone: 'Asia/Singapore'
+        });
         
         // Calculate total for percentage calculations
         const totalArticles = currentData.length;
@@ -733,8 +739,9 @@
         const statsHtml = `
             <h3 style="margin-top: 0; color: #64ffda; text-shadow: 0 0 10px rgba(100, 255, 218, 0.3);">Network Statistics</h3>
             <div style="margin-bottom: 20px; padding: 12px; background: rgba(100, 255, 218, 0.1); border-radius: 8px; border: 1px solid rgba(100, 255, 218, 0.3);">
-                <div style="color: #64ffda; font-weight: 500; font-size: 0.9rem;">📅 Data Retrieved: ${dataRetrievalDate} - ${filteredData4.length > 0 ? `Showing ${currentData.length} filtered articles from ${newsData4.length} total` : `Showing all ${currentData.length} articles`}</div>
+                <div style="color: #64ffda; font-weight: 500; font-size: 0.9rem;">📅 Live Data (${dataRetrievalDate}) - ${filteredData4.length > 0 ? `Showing ${currentData.length} filtered articles from ${newsData4.length} total` : `Showing all ${currentData.length} articles`}</div>
                 <div style="color: #8892b0; font-size: 0.8rem; margin-top: 2px;">🔄 News data is automatically updated daily at 6:00 AM Singapore Time</div>
+                <button onclick="window.refreshNewsData && window.refreshNewsData()" style="background: #64ffda; color: #1a1a1a; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; margin-top: 4px;">🔄 Refresh Now</button>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
                 <div style="padding: 15px; background: rgba(100, 255, 218, 0.05); border-radius: 10px; border: 1px solid rgba(100, 255, 218, 0.2);">
@@ -848,28 +855,153 @@
     // Load and process data
     const loadData4 = async () => {
         try {
-            const response = await fetch('data/news_sg_20250723_032253.json');
-            const jsonData = await response.json();
+            console.log('Starting data loading process...');
             
-            newsData4 = parseJSONData4(jsonData);
-            console.log(`Loaded ${newsData4.length} news articles`);
-            console.log('Categories found:', Array.from(categories4));
-            
-            // Take a sample for better performance if dataset is too large
-            if (newsData4.length > 500) {
-                newsData4 = newsData4.slice(0, 500);
-                console.log(`Using sample of ${newsData4.length} articles for better performance`);
+            // First, try to load the fallback static data to ensure visualization works
+            let fallbackSuccessful = false;
+            try {
+                console.log('Attempting to load fallback static data...');
+                const response = await fetch('data/news_sg_20250723_032253.json');
+                if (response.ok) {
+                    const jsonData = await response.json();
+                    newsData4 = parseJSONData4(jsonData);
+                    console.log(`Fallback: Loaded ${newsData4.length} news articles from static file`);
+                    
+                    if (newsData4.length > 500) {
+                        newsData4 = newsData4.slice(0, 500);
+                        console.log(`Using sample of ${newsData4.length} articles for better performance`);
+                    }
+                    
+                    initializeFilters4();
+                    createNetworkFromData4(newsData4);
+                    fallbackSuccessful = true;
+                    
+                    // Show that we're using fallback but will try to get live data
+                    d3.select('#stats-panel4').append('div')
+                        .style('position', 'absolute')
+                        .style('top', '10px')
+                        .style('right', '10px')
+                        .style('background', 'rgba(255, 167, 38, 0.9)')
+                        .style('color', '#1a1a1a')
+                        .style('padding', '5px 10px')
+                        .style('border-radius', '4px')
+                        .style('font-size', '10px')
+                        .text('Static Data - Checking for live updates...');
+                }
+            } catch (fallbackError) {
+                console.warn('Static fallback data not available:', fallbackError.message);
             }
             
-            initializeFilters4();
-            createNetworkFromData4(newsData4);
+            // Now try to initialize live data
+            console.log('Attempting to set up live data...');
+            
+            // Check if NewsApiScheduler class is available
+            if (typeof window.NewsApiScheduler === 'undefined') {
+                console.warn('NewsApiScheduler class not available. Using static data only.');
+                if (!fallbackSuccessful) {
+                    throw new Error('Neither live API nor static data is available.');
+                }
+                return;
+            }
+            
+            // Use existing global instance or create new one
+            let newsScheduler;
+            if (window.newsApiScheduler) {
+                console.log('Using existing global NewsApiScheduler instance');
+                newsScheduler = window.newsApiScheduler;
+            } else {
+                console.log('Creating new NewsApiScheduler instance');
+                newsScheduler = new window.NewsApiScheduler();
+            }
+            
+            // Try to get cached data from API
+            const cachedData = newsScheduler.getCachedData();
+            if (cachedData && cachedData.length > 0) {
+                console.log('Found cached API data, updating visualization...');
+                newsData4 = parseJSONData4(cachedData);
+                console.log(`Loaded ${newsData4.length} news articles from API cache`);
+                
+                if (newsData4.length > 500) {
+                    newsData4 = newsData4.slice(0, 500);
+                    console.log(`Using sample of ${newsData4.length} articles for better performance`);
+                }
+                
+                initializeFilters4();
+                createNetworkFromData4(newsData4);
+                
+                // Remove fallback message
+                d3.select('#stats-panel4 div').remove();
+            }
+            
+            // Set up update callback for future data
+            newsScheduler.onDataUpdate = (data) => {
+                console.log(`Received ${data.length} articles from live API`);
+                newsData4 = parseJSONData4(data);
+                console.log(`Processed ${newsData4.length} news articles`);
+                
+                if (newsData4.length > 500) {
+                    newsData4 = newsData4.slice(0, 500);
+                    console.log(`Using sample of ${newsData4.length} articles for better performance`);
+                }
+                
+                initializeFilters4();
+                createNetworkFromData4(newsData4);
+                
+                // Remove any status messages
+                d3.select('#stats-panel4 div').remove();
+            };
+            
+            // Start the scheduler (this will fetch fresh data if needed)
+            if (typeof newsScheduler.start === 'function') {
+                console.log('Starting live data scheduler...');
+                await newsScheduler.start();
+            } else if (typeof newsScheduler.init === 'function') {
+                console.log('Initializing live data scheduler...');
+                await newsScheduler.init();
+            }
+            
+            // Add manual refresh capability
+            window.refreshNewsData = () => {
+                console.log('Manual refresh requested');
+                if (typeof newsScheduler.refresh === 'function') {
+                    newsScheduler.refresh();
+                } else if (typeof newsScheduler.fetchAllArticles === 'function') {
+                    newsScheduler.fetchAllArticles();
+                }
+            };
+            
+            console.log('Data loading process complete.');
             
         } catch (error) {
-            console.error('Error loading data:', error);
-            d3.select('#stats-panel4').html(`
-                <h3 style="color: #e74c3c;">Error loading data</h3>
-                <p>Could not load the news data file. Please check that the file exists and is accessible.</p>
-            `);
+            console.error('Error in data loading process:', error);
+            
+            // Show error but don't crash if we have some data
+            if (newsData4 && newsData4.length > 0) {
+                console.log('Continuing with available data despite error');
+                // Add error indicator
+                d3.select('#stats-panel4').append('div')
+                    .style('position', 'absolute')
+                    .style('top', '10px')
+                    .style('right', '10px')
+                    .style('background', 'rgba(231, 76, 60, 0.9)')
+                    .style('color', '#ffffff')
+                    .style('padding', '5px 10px')
+                    .style('border-radius', '4px')
+                    .style('font-size', '10px')
+                    .text('Live data unavailable');
+            } else {
+                // Complete failure - show error message
+                d3.select('#stats-panel4').html(`
+                    <h3 style="color: #e74c3c;">Error loading data</h3>
+                    <p>Could not load news data from any source.</p>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <div style="margin-top: 10px;">
+                        <button onclick="window.location.reload()" style="background: #64ffda; color: #1a1a1a; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                            Retry
+                        </button>
+                    </div>
+                `);
+            }
         }
     };
 
@@ -877,7 +1009,41 @@
     const initialize4 = () => {
         console.log('Initializing news visualization with D3.js hierarchical edge bundling');
         setupControls4();
-        loadData4();
+        
+        // Wait for NewsApiScheduler to be available
+        if (typeof window.NewsApiScheduler !== 'undefined') {
+            console.log('NewsApiScheduler is available, proceeding with data loading');
+            loadData4();
+        } else {
+            console.log('Waiting for NewsApiScheduler to load...');
+            // Wait for NewsApiScheduler to be available
+            const checkScheduler = setInterval(() => {
+                if (typeof window.NewsApiScheduler !== 'undefined') {
+                    console.log('NewsApiScheduler now available, proceeding with data loading');
+                    clearInterval(checkScheduler);
+                    loadData4();
+                }
+            }, 100); // Check every 100ms
+            
+            // Timeout after 10 seconds
+            setTimeout(() => {
+                if (typeof window.NewsApiScheduler === 'undefined') {
+                    console.error('NewsApiScheduler failed to load after 10 seconds');
+                    clearInterval(checkScheduler);
+                    
+                    // Show error message
+                    d3.select('#stats-panel4').html(`
+                        <h3 style="color: #e74c3c;">Error loading NewsApiScheduler</h3>
+                        <p>The news API scheduler failed to load. Please refresh the page.</p>
+                        <div style="margin-top: 10px;">
+                            <button onclick="window.location.reload()" style="background: #64ffda; color: #1a1a1a; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                                Refresh Page
+                            </button>
+                        </div>
+                    `);
+                }
+            }, 10000);
+        }
     };
     
     // Initialize on page load
