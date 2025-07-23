@@ -281,8 +281,8 @@ const PLANNING_AREAS = {
     'Bukit Timah': { center: [1.3294, 103.8008], population: 83000 },
     //'Central Region': { center: [1.3200, 103.8400], population: 9700 },
     'Central Water Catchment': { center: [1.3643, 103.8038], population: 10 }, // Reasonable as nature reserve
-    'Changi': { center: [1.3644, 103.9915], population: 6000 },
-    'Changi Bay': { center: [1.3215, 104.0119], population: 10000 },
+    'Changi': { center: [1.3644, 103.9915], population: 2500 },
+    'Changi Bay': { center: [1.3215, 104.0119], population: 0 },
     'Choa Chu Kang': { center: [1.3840, 103.7470], population: 190000 },
     'Clementi': { center: [1.3162, 103.7649], population: 90000 },
     'Downtown Core': { center: [1.2792, 103.8509], population: 18000 },

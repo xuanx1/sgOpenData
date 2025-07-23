@@ -48,6 +48,45 @@ body {
     border: 1px solid #ffeb3b !important;
 }
 
+/* Network Graph Styles */
+#network-graph4 {
+    border: 1px solid #333;
+}
+
+#network-graph4 canvas {
+    border-radius: 8px;
+}
+
+#info-panel4 {
+    transition: all 0.3s ease;
+}
+
+#stats-panel4 h3 {
+    color: #3498db;
+    margin-bottom: 10px;
+}
+
+/* Filter controls styling */
+select, input[type="text"] {
+    background: #1a1a2e !important;
+    color: #eee !important;
+    border: 1px solid #333 !important;
+}
+
+select:focus, input[type="text"]:focus {
+    border-color: #3498db !important;
+    outline: none !important;
+}
+
+/* Network node styling */
+.sigma-node {
+    cursor: pointer;
+}
+
+.sigma-edge {
+    pointer-events: none;
+}
+
 /* Container layouts */
 #container3a {
     width: 100%;

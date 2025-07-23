@@ -477,7 +477,7 @@ const addGoogleTrafficLayer = () => {
     
     
     // toggle button
-    trafficToggleButton.text("Hide Traffic");
+    trafficToggleButton.text("Show Traffic");
     trafficToggleButton.property("disabled", false);
     
   };
