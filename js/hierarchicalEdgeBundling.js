@@ -4,28 +4,29 @@
 
 // Usage: hierarchicalEdgeBundling('#network-graph4', nodes, links)
 
-// Sophisticated contrasting color scheme - no primary colors
+// Sophisticated contrasting color scheme - synchronized with app4.js
 const categoryColors = {
-    'politics': '#fd5050ff',      // Crimson - Deep red, more sophisticated than pure red
-    'business': '#2F4F4F',      // Dark Slate Gray - Professional business color
-    'sports': '#4169E1',       // Royal Blue - Elegant blue, not pure
-    'technology': '#9370DB',   // Medium Purple - Refined purple shade
-    'health': '#228B22',       // Forest Green - Natural green, not neon
-    'entertainment': '#FFD700', // Gold - Luxurious yellow tone
-    'science': '#20B2AA',      // Light Sea Green - Sophisticated teal
-    'world': '#8B4513',        // Saddle Brown - Rich earth tone
-    'opinion': '#FF69B4',      // Hot Pink - Vibrant but not pure magenta
-    'general': '#927c54ff',      // Beige - Neutral, warm beige tone
-    'default': '#2F4F4F'       // Dark Slate Gray - Sophisticated fallback
+    'politics': '#ff6b6b',      
+    'business': '#ecc542ff',     
+    'sports': '#16afd1ff',       
+    'technology': '#96ceb4',   
+    'health': '#ffeaa7',      
+    'entertainment': '#fd79a8', 
+    'science': '#a29bfe',   
+    'world': '#fd79a8',      
+    'opinion': '#74b9ff',    
+    'general': '#cfcfcfff',    
+    'default': '#00d6a1ff'  
 };
 
 // Make sure the function is globally available
-window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, originalData = null) {
+window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, originalData = null, dynamicCategoryColors = null) {
     console.log('=== HIERARCHICAL EDGE BUNDLING FUNCTION CALLED ===');
     console.log('Container:', containerSelector);
     console.log('Nodes:', nodes ? nodes.length : 'undefined');
     console.log('Links:', links ? links.length : 'undefined');
     console.log('Original data:', originalData ? originalData.length : 'not provided');
+    console.log('Dynamic category colors:', dynamicCategoryColors ? Object.keys(dynamicCategoryColors) : 'not provided');
     
     // Validate inputs
     if (!nodes || !Array.isArray(nodes) || nodes.length === 0) {
@@ -313,9 +314,9 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
         // Helper function to get category color
         const getCategoryColor = (nodeId) => {
             const node = nodeById[nodeId];
-            if (!node) return categoryColors['default'];
+            if (!node) return (dynamicCategoryColors || categoryColors)['default'];
             const category = node.parent ? node.parent.id : 'general';
-            return categoryColors[category] || categoryColors['default'];
+            return (dynamicCategoryColors || categoryColors)[category] || (dynamicCategoryColors || categoryColors)['default'];
         };
         
         // Helper function to create or get gradient ID
@@ -523,7 +524,7 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
             .attr('fill', d => {
                 // Get category from the node's parent (which should be the category node)
                 const category = d.parent ? d.parent.id : 'general';
-                return categoryColors[category] || categoryColors['default'];
+                return (dynamicCategoryColors || categoryColors)[category] || (dynamicCategoryColors || categoryColors)['default'];
             })
             .attr('stroke', '#fff')
             .attr('stroke-width', 1)
@@ -619,7 +620,7 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
                             ${title}
                         </div>
                         <div style="margin-bottom: 4px;">
-                            <strong>Category:</strong> <span style="color: ${categoryColors[category] || categoryColors['default']};">${category}</span>
+                            <strong>Category:</strong> <span style="color: ${(dynamicCategoryColors || categoryColors)[category] || (dynamicCategoryColors || categoryColors)['default']};">${category}</span>
                         </div>
                         <div style="margin-bottom: 4px;">
                             <strong>Connections:</strong> <span style="color: #ffd93d;">${nodeConnections}</span> 
@@ -692,8 +693,26 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
     }
     
     // Create fixed legend at bottom left (outside the transformable group)
-    const legendData = Object.entries(categoryColors).filter(([key]) => key !== 'default');
-    
+    // Use dynamic categories from actual data if available, otherwise use all predefined categories
+    // LEGEND LOGIC: Always show categories from the full dataset, not just filtered data
+    // This ensures the legend and color mapping remain consistent regardless of filters applied
+    // Connections are also always built from the full dataset, so the network structure is stable
+    const actualCategories = new Set();
+    if (originalData && Array.isArray(originalData)) {
+        originalData.forEach(item => {
+            if (item.category) {
+                actualCategories.add(item.category);
+            }
+        });
+    }
+
+    // Use actual categories from the full dataset if available, otherwise fall back to all predefined ones
+    const categoriesToShow = actualCategories.size > 0 ?
+        Array.from(actualCategories).map(cat => [cat, (dynamicCategoryColors || categoryColors)[cat] || (dynamicCategoryColors || categoryColors)['default']]) :
+        Object.entries(dynamicCategoryColors || categoryColors).filter(([key]) => key !== 'default');
+
+    console.log('Legend categories to show (from full dataset):', categoriesToShow.map(([cat]) => cat));
+
     const legend = container
         .append('div')
         .style('position', 'absolute')
@@ -715,7 +734,7 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
         .style('margin-bottom', '8px')
         .text('Categories');
     
-    legendData.forEach(([category, color]) => {
+    categoriesToShow.forEach(([category, color]) => {
         const legendItem = legend
             .append('div')
             .style('display', 'flex')

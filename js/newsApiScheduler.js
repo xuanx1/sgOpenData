@@ -301,10 +301,10 @@ class NewsApiScheduler {
         // Update the visualization
         if (typeof window.hierarchicalEdgeBundling === 'function') {
             window.hierarchicalEdgeBundling('#network-graph4', nodes, links, this.currentData);
-            console.log('✅ Visualization updated successfully');
+            console.log('✅ News Visualization updated successfully');
             
             // Show status update
-            this.showStatusUpdate(`📊 Visualization updated with ${this.currentData.length} articles`);
+            this.showStatusUpdate(`📊 News Visualization updated with ${this.currentData.length} articles`);
         } else {
             console.error('❌ Visualization function not available');
         }
