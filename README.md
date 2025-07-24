@@ -1,6 +1,7 @@
-# Exploring Singapore Open Data
-[Preview](https://xuanx1.github.io/sgOpenData/)
+# Exploring Singapore Open Data [Preview](https://xuanx1.github.io/sgOpenData/)
 <img width="1920" height="4613" alt="screencapture-localhost-5174-2025-07-21-23_37_48" src="https://github.com/user-attachments/assets/e440fee2-a104-4c4b-95f1-5b3abd020192" />
+
+---
 
 🚘 Singapore HDB Parking-Traffic Map
 ![Screenshot 2025-07-21 233034](https://github.com/user-attachments/assets/d5227dbe-a295-483e-9642-b0a69ccdbd53)
@@ -19,12 +20,35 @@
 Connectivity Index Calculation:
 
 MRT Stations (35%): Density of MRT stations within each area
+
 Bus Stops (30%): Density of bus stops relative to population
+
 Carparks (20%): Available parking facilities per capita
+
 Taxi Availability (15%): Real-time taxi density in each planning area
+
 Scoring: Each component is scored 0-100, then weighted to produce the final connectivity index. Areas with scores 80+ are considered to have excellent connectivity, while scores below 20 indicate areas that need infrastructure improvement.
 
-Data Sources: Singapore LTA DataMall • Data.gov.sg Transport APIs • URA Master Plan • Population Census
+---
+
+## Citations & Data Sources
+
+**Data Sources:**
+- [Singapore LTA DataMall](https://datamall.lta.gov.sg/)
+- [Data.gov.sg Transport APIs](https://data.gov.sg/dataset?organization=land-transport-authority)
+- [URA Master Plan](https://www.ura.gov.sg/maps/?lat=1.3521&lng=103.8198&zoom=12)
+- [Singapore Population Census](https://www.singstat.gov.sg/publications/population)
+
+**References:**
+- Singapore Land Transport Authority (LTA)
+- Urban Redevelopment Authority (URA)
+- Singapore Department of Statistics
+- OpenStreetMap contributors
+
+**Visualization & Code:**
+- D3.js (https://d3js.org/)
+- Project code: [GitHub - xuanx1/sgOpenData](https://github.com/xuanx1/sgOpenData)
 
 
 Made with ❤️ in NYC for 🇸🇬 Singapore
+
