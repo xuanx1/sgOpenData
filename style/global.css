@@ -119,3 +119,36 @@ button:hover {
 .lamp-glow {
     animation: lampGlow 3s ease-in-out infinite;
 }
+
+/* Flight Tooltip Styles - Override Leaflet defaults */
+.leaflet-tooltip.flight-tooltip {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.leaflet-tooltip.flight-tooltip::before {
+    display: none !important;
+}
+
+.leaflet-tooltip-left.flight-tooltip::before,
+.leaflet-tooltip-right.flight-tooltip::before,
+.leaflet-tooltip-top.flight-tooltip::before,
+.leaflet-tooltip-bottom.flight-tooltip::before {
+    display: none !important;
+}
+
+/* Custom transparent tooltip class */
+.leaflet-tooltip.custom-transparent-tooltip {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.leaflet-tooltip.custom-transparent-tooltip::before {
+    display: none !important;
+}

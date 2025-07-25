@@ -1,0 +1,7 @@
+Flight Tracker Preview Image
+This would contain a screenshot of the Singapore Flight Tracker application showing:
+- Interactive map with Singapore airspace boundaries
+- Flight markers showing arrivals and departures  
+- Control panels with filtering options
+- Statistics dashboard
+- Detailed flight information panels

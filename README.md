@@ -29,6 +29,29 @@ Taxi Availability (15%): Real-time taxi density in each planning area
 
 Scoring: Each component is scored 0-100, then weighted to produce the final connectivity index. Areas with scores 80+ are considered to have excellent connectivity, while scores below 20 indicate areas that need infrastructure improvement.
 
+✈️ Singapore Flight Tracker - Real-time Aviation Monitoring
+![Singapore Flight Tracker](preview/flight-tracker-preview.png)
+
+**Features:**
+- Real-time flight tracking for arrivals and departures
+- Singapore airspace demarcation (FIR, TCA, CTR zones)
+- Interactive flight information with detailed aircraft data
+- Traffic corridor visualization for major routes
+- Live flight statistics and airline filtering
+- Changi and Seletar airport information
+
+**Airspace Zones:**
+- Flight Information Region (FIR): ~65,000 sq km managed airspace
+- Terminal Control Area (TCA): High-density controlled airspace  
+- Control Traffic Region (CTR): Immediate airport control zones
+- Standard arrival/departure traffic corridors
+
+**Technical Implementation:**
+- Live flight position simulation with realistic movement
+- Comprehensive flight data including altitude, speed, heading
+- Interactive map with airspace boundary overlays
+- Real-time statistics dashboard with filtering capabilities
+
 ---
 
 ## Citations & Data Sources

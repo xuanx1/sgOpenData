@@ -171,8 +171,8 @@ async function loadLampPostData() {
     console.log(`📊 Loaded ${lampPostData3a.length} lamp posts (filtered from ${geoJsonData.features.length} total)`);
     
     statusDiv3a
-      .style("color", "#4caf50")
-      .style("background", "#1a2e1a")
+      .style("color", "#ffeb3b")
+      .style("background", "#2e2a1a")
       .text(`✅ Loaded ${lampPostData3a.length} lamp posts successfully`);
     
     return lampPostData3a;
@@ -234,6 +234,11 @@ async function displayLampPosts() {
     lampPostData3a.forEach((lamp, index) => {
       const powerConfig = ILLUMINATION_CONFIG.powerLevels[lamp.powerLevel];
       
+      // Debug: Log the lamp color being applied
+      if (index < 5) { // Only log first 5 to avoid spam
+        console.log(`🔦 Lamp ${index}: Power=${lamp.powerLevel}, Color=${powerConfig.color}`);
+      }
+      
       // Create illumination circle first (so it appears behind the lamp)
       const illuminationCircle = L.circle([lamp.latitude, lamp.longitude], {
         radius: powerConfig.radius,
@@ -265,16 +270,16 @@ async function displayLampPosts() {
       const lampIcon = L.divIcon({
         html: `
           <div style="
-            width: 8px; 
-            height: 8px; 
-            background: ${powerConfig.color}; 
-            border-radius: 50%;
-            border: 2px solid #fff;
+            width: 8px !important; 
+            height: 8px !important; 
+            background: ${powerConfig.color} !important; 
+            border-radius: 50% !important;
+            border: 2px solid #fff !important;
             box-shadow: 
               0 0 8px ${powerConfig.color},
               0 0 16px ${powerConfig.color}aa,
-              0 0 24px ${powerConfig.color}66;
-            animation: pulse 2s infinite;
+              0 0 24px ${powerConfig.color}66 !important;
+            animation: pulse 2s infinite !important;
           "></div>
           <style>
             @keyframes pulse {
@@ -414,8 +419,8 @@ function createControlPanel() {
   controlsContainer.append("button")
     .text("🎯 Reset")
     .style("padding", "8px 16px")
-    .style("background", "#4caf50")
-    .style("color", "white")
+    .style("background", "#ffeb3b")
+    .style("color", "#1a1a1a")
     .style("border", "none")
     .style("border-radius", "6px")
     .style("cursor", "pointer")
@@ -465,7 +470,7 @@ function createStatisticsPanel() {
     .style("text-align", "center")
     .style("flex", "1")
     .html(`
-      <div style="color: #4caf50; font-size: 1.2rem; font-weight: bold;">${(totalIlluminatedArea / 1000000).toFixed(1)}km²</div>
+      <div style="color: #ffeb3b; font-size: 1.2rem; font-weight: bold;">${(totalIlluminatedArea / 1000000).toFixed(1)}km²</div>
       <div style="color: #bbb; font-size: 0.8rem;">Coverage</div>
     `);
 
