@@ -64,6 +64,24 @@
             backdrop-filter: blur(10px);
         }
         
+        /* Override Leaflet popup default styles */
+        .leaflet-popup-content-wrapper {
+            background: transparent !important;
+            border-radius: 8px !important;
+            box-shadow: none !important;
+        }
+        
+        .leaflet-popup-content {
+            margin: 0 !important;
+            background: transparent !important;
+        }
+        
+        .leaflet-popup-tip {
+            background: rgba(26, 26, 46, 0.95) !important;
+            border: 1px solid rgba(0, 188, 212, 0.5) !important;
+            box-shadow: none !important;
+        }
+        
         .flight-controls {
             background: rgba(26, 26, 46, 0.9);
             border: 1px solid rgba(0, 188, 212, 0.3);
@@ -253,23 +271,53 @@
     let updateInterval;
     let isLiveUpdateEnabled = true;
     
+    // Status update function - same as news visualization
+    const showStatusUpdate = (message) => {
+        // Create or update status element
+        let statusElement = document.getElementById('news-api-status');
+        if (!statusElement) {
+            statusElement = document.createElement('div');
+            statusElement.id = 'news-api-status';
+            statusElement.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(26, 26, 46, 0.95);
+                border: 1px solid rgba(100, 255, 218, 0.5);
+                border-radius: 8px;
+                padding: 10px 15px;
+                color: #64ffda;
+                font-size: 12px;
+                font-family: monospace;
+                z-index: 10000;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                transition: opacity 0.3s ease;
+            `;
+            document.body.appendChild(statusElement);
+        }
+        
+        statusElement.textContent = message;
+        statusElement.style.opacity = '1';
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            statusElement.style.opacity = '0';
+        }, 5000);
+    };
+    
     // Flight API configuration
     const FLIGHT_API = {
         // Primary APIs
         OPENSKY_BASE: 'https://opensky-network.org/api',
-        AVIATIONSTACK_BASE: 'https://api.aviationstack.com/v1',
         FLIGHTAWARE_BASE: 'https://aeroapi.flightaware.com/aeroapi',
-        ADSBEXCHANGE_BASE: 'https://adsbexchange.com/api',
         
         // Additional Aviation APIs
-        AIRLABS_BASE: 'https://airlabs.co/api/v9',
-        AERODATABOX_BASE: 'https://aerodatabox.p.rapidapi.com',
         AIRPLANES_LIVE_BASE: 'https://api.airplanes.live/v2',
         ADSB_FI_BASE: 'https://api.adsb.fi/v2',
         VADSO_BASE: 'https://api.vadso.com/v1',
         
         // Backup/Alternative APIs
-        FLIGHTRADAR24_BASE: 'https://data-live.flightradar24.com/zones/fcgi/feed.js',
         PLANEFINDER_BASE: 'https://planefinder.net/api',
         RADARBOX_BASE: 'https://www.radarbox.com/api',
         
@@ -291,11 +339,8 @@
         
         // API Keys (normally these would be in environment variables)
         API_KEYS: {
-            aviationstack: 'demo', // Replace with actual key - free tier: 1000 req/month
             flightaware: 'demo',   // Replace with actual key - free tier: 100 req/month
-            adsbexchange: 'demo',  // Replace with actual key
-            airlabs: 'demo',       // Replace with actual key - free tier: 1000 req/month
-            aerodatabox: 'demo'    // Replace with actual key - free tier: 100 req/month
+            rapidapi: 'demo'       // Replace with actual RapidAPI key
         }
     };
     
@@ -538,11 +583,6 @@
             // Fetch from multiple sources in parallel
             const apiPromises = [
                 fetchFromOpenSky().catch(err => ({ source: 'OpenSky', error: err.message, flights: [] })),
-                fetchFromAviationStack().catch(err => ({ source: 'AviationStack', error: err.message, flights: [] })),
-                fetchFromADSBExchange().catch(err => ({ source: 'ADS-B Exchange', error: err.message, flights: [] })),
-                fetchFromFlightRadar24().catch(err => ({ source: 'FlightRadar24', error: err.message, flights: [] })),
-                fetchFromAirLabs().catch(err => ({ source: 'AirLabs', error: err.message, flights: [] })),
-                fetchFromAeroDataBox().catch(err => ({ source: 'AeroDataBox', error: err.message, flights: [] })),
                 fetchFromAirplanesLive().catch(err => ({ source: 'Airplanes.live', error: err.message, flights: [] })),
                 fetchFromADSBFi().catch(err => ({ source: 'ADSB.fi', error: err.message, flights: [] }))
             ];
@@ -551,7 +591,7 @@
             
             // Process results from all APIs
             results.forEach((result, index) => {
-                const apiNames = ['OpenSky', 'AviationStack', 'ADS-B Exchange', 'FlightRadar24', 'AirLabs', 'AeroDataBox', 'Airplanes.live', 'ADSB.fi'];
+                const apiNames = ['OpenSky', 'Airplanes.live', 'ADSB.fi'];
                 const apiName = apiNames[index];
                 
                 if (result.status === 'fulfilled' && result.value.flights) {
@@ -583,7 +623,8 @@
                 
                 return allFlights;
             } else {
-                throw new Error('No flights available from any API source');
+                console.warn('No real flight data available from any API source - only showing live data when APIs are working');
+                return []; // Return empty array instead of simulated data
             }
             
         } catch (error) {
@@ -617,155 +658,58 @@
             return { source: 'OpenSky', flights: [] };
         }
         
-        const flights = data.states.map((state, index) => {
+        const flights = data.states.map(async (state, index) => {
             const [icao24, callsign, origin_country, time_position, last_contact, 
                    longitude, latitude, baro_altitude, on_ground, velocity, 
                    true_track, vertical_rate] = state;
             
             if (longitude === null || latitude === null) return null;
             
-            return processFlightData({
+            // Try to get route information from OpenSky route API
+            let routeData = null;
+            if (callsign && callsign.trim()) {
+                try {
+                    const routeUrl = `${FLIGHT_API.OPENSKY_BASE}/routes?callsign=${callsign.trim()}`;
+                    const routeResponse = await fetch(routeUrl);
+                    if (routeResponse.ok) {
+                        const routes = await routeResponse.json();
+                        if (routes && routes.length > 0) {
+                            const route = routes[0];
+                            routeData = {
+                                originIata: route.estDepartureAirport,
+                                destinationIata: route.estArrivalAirport,
+                                origin: route.estDepartureAirport,
+                                destination: route.estArrivalAirport
+                            };
+                        }
+                    }
+                } catch (routeError) {
+                    console.log(`Route lookup failed for ${callsign}:`, routeError.message);
+                }
+            }
+            
+            return await processFlightData({
                 id: icao24 || `opensky_${index}`,
                 callsign: (callsign || '').trim() || `UNKNWN${index}`,
                 country: origin_country || 'Unknown',
                 longitude, latitude, baro_altitude, on_ground, velocity, true_track, vertical_rate,
                 lastContact: last_contact ? new Date(last_contact * 1000) : new Date(),
-                source: 'OpenSky'
+                source: 'OpenSky',
+                // Include route data if available
+                originAirport: routeData?.origin,
+                destinationAirport: routeData?.destination,
+                originIata: routeData?.originIata,
+                destinationIata: routeData?.destinationIata
             });
-        }).filter(flight => flight !== null);
+        });
         
-        return { source: 'OpenSky', flights };
-    };
-    
-    // Fetch from AviationStack API
-    const fetchFromAviationStack = async () => {
-        console.log('Fetching from AviationStack...');
-        
-        // AviationStack focuses on flights to/from specific airports
-        const apiUrl = `${FLIGHT_API.AVIATIONSTACK_BASE}/flights?access_key=${FLIGHT_API.API_KEYS.aviationstack}&dep_iata=SIN&limit=50`;
-        const apiUrl2 = `${FLIGHT_API.AVIATIONSTACK_BASE}/flights?access_key=${FLIGHT_API.API_KEYS.aviationstack}&arr_iata=SIN&limit=50`;
-        
-        let flights = [];
-        
-        try {
-            // Fetch departures and arrivals
-            const [depResponse, arrResponse] = await Promise.allSettled([
-                fetch(`${FLIGHT_API.CORS_PROXY}${encodeURIComponent(apiUrl)}`),
-                fetch(`${FLIGHT_API.CORS_PROXY}${encodeURIComponent(apiUrl2)}`)
-            ]);
-            
-            if (depResponse.status === 'fulfilled' && depResponse.value.ok) {
-                const depData = await depResponse.value.json();
-                if (depData.data) {
-                    flights.push(...depData.data.map((flight, index) => processAviationStackFlight(flight, index, 'departure')));
-                }
-            }
-            
-            if (arrResponse.status === 'fulfilled' && arrResponse.value.ok) {
-                const arrData = await arrResponse.value.json();
-                if (arrData.data) {
-                    flights.push(...arrData.data.map((flight, index) => processAviationStackFlight(flight, index + 1000, 'arrival')));
-                }
-            }
-        } catch (error) {
-            console.log('AviationStack API unavailable (demo key)');
-            // Generate some realistic flights for demonstration
-            flights = generateRealisticFlights(15, 'AviationStack');
-        }
-        
-        return { source: 'AviationStack', flights };
-    };
-    
-    // Fetch from ADS-B Exchange API
-    const fetchFromADSBExchange = async () => {
-        console.log('Fetching from ADS-B Exchange...');
-        
-        const { lat_min, lat_max, lon_min, lon_max } = FLIGHT_API.SINGAPORE_BOUNDS;
-        const apiUrl = `${FLIGHT_API.ADSBEXCHANGE_BASE}/aircraft/json/lat/${(lat_min + lat_max) / 2}/lon/${(lon_min + lon_max) / 2}/dist/100`;
-        
-        try {
-            const response = await fetch(`${FLIGHT_API.CORS_PROXY}${encodeURIComponent(apiUrl)}`);
-            if (!response.ok) throw new Error(`ADS-B Exchange API: ${response.status}`);
-            
-            const data = await response.json();
-            if (!data.aircraft) return { source: 'ADS-B Exchange', flights: [] };
-            
-            const flights = data.aircraft.map((aircraft, index) => {
-                if (!aircraft.lat || !aircraft.lon) return null;
-                
-                return processFlightData({
-                    id: aircraft.hex || `adsb_${index}`,
-                    callsign: aircraft.flight || `ADSB${index}`,
-                    country: aircraft.flag || 'Unknown',
-                    longitude: aircraft.lon,
-                    latitude: aircraft.lat,
-                    baro_altitude: aircraft.alt_baro,
-                    on_ground: aircraft.alt_baro < 100,
-                    velocity: aircraft.gs,
-                    true_track: aircraft.track,
-                    vertical_rate: aircraft.baro_rate,
-                    lastContact: new Date(),
-                    source: 'ADS-B Exchange'
-                });
-            }).filter(flight => flight !== null);
-            
-            return { source: 'ADS-B Exchange', flights };
-        } catch (error) {
-            console.log('ADS-B Exchange API unavailable');
-            // Generate some realistic flights for demonstration
-            const flights = generateRealisticFlights(12, 'ADS-B Exchange');
-            return { source: 'ADS-B Exchange', flights };
-        }
-    };
-    
-    // Fetch from FlightRadar24 API (simplified)
-    const fetchFromFlightRadar24 = async () => {
-        console.log('Fetching from FlightRadar24...');
-        
-        try {
-            // FlightRadar24 uses a different format
-            const bounds = `${FLIGHT_API.SINGAPORE_BOUNDS.lat_max},${FLIGHT_API.SINGAPORE_BOUNDS.lat_min},${FLIGHT_API.SINGAPORE_BOUNDS.lon_min},${FLIGHT_API.SINGAPORE_BOUNDS.lon_max}`;
-            const apiUrl = `${FLIGHT_API.FLIGHTRADAR24_BASE}?bounds=${bounds}&faa=1&satellite=1&mlat=1&flarm=1&adsb=1&gnd=1&air=1&vehicles=1&estimated=1&maxage=14400&gliders=1&stats=1`;
-            
-            const response = await fetch(`${FLIGHT_API.CORS_PROXY_ALT}${encodeURIComponent(apiUrl)}`);
-            if (!response.ok) throw new Error(`FlightRadar24 API: ${response.status}`);
-            
-            const data = await response.json();
-            const flights = [];
-            
-            // FlightRadar24 returns object with flight IDs as keys
-            Object.entries(data).forEach(([key, flight]) => {
-                if (Array.isArray(flight) && flight.length >= 13) {
-                    const processedFlight = processFlightData({
-                        id: key,
-                        callsign: flight[16] || `FR24_${key}`,
-                        country: flight[11] || 'Unknown',
-                        longitude: flight[2],
-                        latitude: flight[1],
-                        baro_altitude: flight[4],
-                        on_ground: flight[14] === 1,
-                        velocity: flight[5],
-                        true_track: flight[3],
-                        vertical_rate: flight[15],
-                        lastContact: new Date(),
-                        source: 'FlightRadar24'
-                    });
-                    
-                    if (processedFlight) flights.push(processedFlight);
-                }
-            });
-            
-            return { source: 'FlightRadar24', flights };
-        } catch (error) {
-            console.log('FlightRadar24 API unavailable');
-            // Generate some realistic flights for demonstration
-            const flights = generateRealisticFlights(18, 'FlightRadar24');
-            return { source: 'FlightRadar24', flights };
-        }
+        // Wait for all flight processing to complete
+        const resolvedFlights = await Promise.all(flights);
+        return { source: 'OpenSky', flights: resolvedFlights.filter(flight => flight !== null) };
     };
     
     // Process flight data from different API sources into a unified format
-    const processFlightData = (rawData) => {
+    const processFlightData = async (rawData) => {
         if (!rawData.longitude || !rawData.latitude) return null;
         
         // Determine if it's arrival or departure based on position relative to Changi
@@ -792,8 +736,29 @@
         // Calculate heading
         const heading = rawData.true_track || 0;
         
-        // Estimate destination/origin based on heading and position
-        const estimatedDestination = estimateDestination(rawData.latitude, rawData.longitude, heading, flightType);
+        // Get REAL origin/destination from APIs - only use real data
+        const routeInfo = await getAirlineRoute(airlineCode, cleanCallsign, flightType, {
+            origin: rawData.originAirport,
+            destination: rawData.destinationAirport,
+            originIata: rawData.originIata,
+            destinationIata: rawData.destinationIata
+        });
+        
+        // Only use route info if we got real data, otherwise leave as generic
+        let origin, destination, originCoords, destinationCoords;
+        
+        if (routeInfo) {
+            origin = routeInfo.origin;
+            destination = routeInfo.destination;
+            originCoords = routeInfo.originCoords;
+            destinationCoords = routeInfo.destinationCoords;
+        } else {
+            // No real route data available - use simple position-based labels
+            origin = `Live Flight ${cleanCallsign}`;
+            destination = 'Singapore Airspace';
+            originCoords = [rawData.latitude, rawData.longitude];
+            destinationCoords = CHANGI_AIRPORT;
+        }
         
         return {
             id: rawData.id,
@@ -801,162 +766,24 @@
             airline: airlineCode || 'UNK',
             airlineName: airlineName,
             type: flightType,
-            origin: flightType === 'arrival' ? estimatedDestination : 'Singapore Changi',
-            destination: flightType === 'arrival' ? 'Singapore Changi' : estimatedDestination,
+            origin: origin,
+            destination: destination,
             currentPosition: [rawData.latitude, rawData.longitude],
-            originCoords: flightType === 'arrival' ? [rawData.latitude, rawData.longitude] : CHANGI_AIRPORT,
-            destinationCoords: flightType === 'arrival' ? CHANGI_AIRPORT : [rawData.latitude, rawData.longitude],
-            altitude: rawData.baro_altitude || 0,
-            speed: Math.round((rawData.velocity || 0) * (rawData.source === 'AviationStack' ? 1 : 1.944)), // Convert m/s to knots for some APIs
-            heading: Math.round(heading),
-            progress: calculateProgress(rawData.latitude, rawData.longitude, flightType),
+            originCoords: originCoords,
+            destinationCoords: destinationCoords,
+            altitude: Math.max(0, rawData.baro_altitude || 0),
+            speed: Math.max(0, Math.round((rawData.velocity || 0) * 1.944)), // Convert m/s to knots
+            heading: Math.max(0, Math.min(360, Math.round(heading || 0))),
+            progress: Math.max(0, Math.min(1, calculateProgress(rawData.latitude, rawData.longitude, flightType) || 0)),
             estimatedTime: new Date(Date.now() + (Math.random() * 4 * 60 * 60 * 1000)),
-            aircraftType: getAircraftType(rawData.id),
-            status: getFlightStatus(rawData.baro_altitude, rawData.velocity, rawData.on_ground),
+            aircraftType: getAircraftType(rawData.id) || 'Unknown',
+            status: getFlightStatus(rawData.baro_altitude, rawData.velocity, rawData.on_ground) || 'Unknown',
             onGround: rawData.on_ground || false,
             lastContact: rawData.lastContact || new Date(),
             country: rawData.country || 'Unknown',
             verticalRate: rawData.vertical_rate || 0,
             apiSource: rawData.source
         };
-    };
-    
-    // Process AviationStack specific format
-    const processAviationStackFlight = (flight, index, type) => {
-        // AviationStack provides different data structure
-        const departure = flight.departure || {};
-        const arrival = flight.arrival || {};
-        const live = flight.live || {};
-        
-        // Estimate current position based on progress and route
-        let currentLat, currentLon;
-        if (live.latitude && live.longitude) {
-            currentLat = live.latitude;
-            currentLon = live.longitude;
-        } else {
-            // Estimate position based on departure/arrival and progress
-            const progress = Math.random() * 0.8 + 0.1; // Random progress between 10% and 90%
-            const depCoords = departure.iata === 'SIN' ? CHANGI_AIRPORT : getAirportCoords(departure.iata);
-            const arrCoords = arrival.iata === 'SIN' ? CHANGI_AIRPORT : getAirportCoords(arrival.iata);
-            
-            if (depCoords && arrCoords) {
-                currentLat = depCoords[0] + (arrCoords[0] - depCoords[0]) * progress;
-                currentLon = depCoords[1] + (arrCoords[1] - depCoords[1]) * progress;
-            } else {
-                // Default to somewhere near Singapore
-                currentLat = CHANGI_AIRPORT[0] + (Math.random() - 0.5) * 0.5;
-                currentLon = CHANGI_AIRPORT[1] + (Math.random() - 0.5) * 0.5;
-            }
-        }
-        
-        return processFlightData({
-            id: `aviationstack_${flight.flight?.iata || index}`,
-            callsign: flight.flight?.iata || `AS${index}`,
-            country: flight.airline?.name || 'Unknown',
-            longitude: currentLon,
-            latitude: currentLat,
-            baro_altitude: live.altitude || 25000 + Math.random() * 10000,
-            on_ground: live.is_ground || false,
-            velocity: live.speed_horizontal || 400 + Math.random() * 200,
-            true_track: live.direction || Math.random() * 360,
-            vertical_rate: live.speed_vertical || 0,
-            lastContact: new Date(),
-            source: 'AviationStack'
-        });
-    };
-    
-    // Fetch from AirLabs API
-    const fetchFromAirLabs = async () => {
-        console.log('Fetching from AirLabs...');
-        
-        try {
-            // AirLabs provides real-time ADS-B data with geo-latitude filter
-            const { lat, lon, radius } = FLIGHT_API.CHANGI_VICINITY;
-            const apiUrl = `${FLIGHT_API.AIRLABS_BASE}/flights?api_key=${FLIGHT_API.API_KEYS.airlabs}&lat=${lat}&lng=${lon}&distance=${Math.round(radius * 111)}`;
-            
-            const response = await fetch(`${FLIGHT_API.CORS_PROXY}${encodeURIComponent(apiUrl)}`);
-            if (!response.ok) throw new Error(`AirLabs API: ${response.status}`);
-            
-            const data = await response.json();
-            if (!data.response || !Array.isArray(data.response)) {
-                throw new Error('AirLabs: Invalid response format');
-            }
-            
-            const flights = data.response.map((aircraft, index) => {
-                if (!aircraft.lat || !aircraft.lng) return null;
-                
-                return processFlightData({
-                    id: aircraft.hex || `airlabs_${index}`,
-                    callsign: aircraft.flight_iata || aircraft.flight_icao || `ALB${index}`,
-                    country: aircraft.flag || 'Unknown',
-                    longitude: aircraft.lng,
-                    latitude: aircraft.lat,
-                    baro_altitude: aircraft.alt,
-                    on_ground: aircraft.status === 'landed',
-                    velocity: aircraft.speed,
-                    true_track: aircraft.dir,
-                    vertical_rate: aircraft.v_speed || 0,
-                    lastContact: new Date(),
-                    source: 'AirLabs'
-                });
-            }).filter(flight => flight !== null);
-            
-            return { source: 'AirLabs', flights };
-        } catch (error) {
-            console.log('AirLabs API unavailable:', error.message);
-            // Generate realistic flights as fallback
-            const flights = generateRealisticFlights(8, 'AirLabs');
-            return { source: 'AirLabs', flights };
-        }
-    };
-    
-    // Fetch from AeroDataBox API
-    const fetchFromAeroDataBox = async () => {
-        console.log('Fetching from AeroDataBox...');
-        
-        try {
-            // AeroDataBox provides comprehensive flight and airport data
-            const apiUrl = `${FLIGHT_API.AERODATABOX_BASE}/flights/airports/icao/WSSS?withLeg=true&direction=Both&withCancelled=false&withCodeshared=true&withCargo=false&withPrivate=false&withLocation=false`;
-            
-            const response = await fetch(`${FLIGHT_API.CORS_PROXY_ALT}${encodeURIComponent(apiUrl)}`, {
-                headers: {
-                    'X-RapidAPI-Key': FLIGHT_API.API_KEYS.aerodatabox,
-                    'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com'
-                }
-            });
-            
-            if (!response.ok) throw new Error(`AeroDataBox API: ${response.status}`);
-            
-            const data = await response.json();
-            if (!data.departures && !data.arrivals) {
-                throw new Error('AeroDataBox: No flight data available');
-            }
-            
-            const flights = [];
-            
-            // Process departures
-            if (data.departures) {
-                data.departures.slice(0, 15).forEach((flight, index) => {
-                    const processedFlight = processAeroDataBoxFlight(flight, index, 'departure');
-                    if (processedFlight) flights.push(processedFlight);
-                });
-            }
-            
-            // Process arrivals
-            if (data.arrivals) {
-                data.arrivals.slice(0, 15).forEach((flight, index) => {
-                    const processedFlight = processAeroDataBoxFlight(flight, index, 'arrival');
-                    if (processedFlight) flights.push(processedFlight);
-                });
-            }
-            
-            return { source: 'AeroDataBox', flights };
-        } catch (error) {
-            console.log('AeroDataBox API unavailable:', error.message);
-            // Generate realistic flights as fallback
-            const flights = generateRealisticFlights(10, 'AeroDataBox');
-            return { source: 'AeroDataBox', flights };
-        }
     };
     
     // Fetch from Airplanes.live API (free, no API key required)
@@ -976,10 +803,10 @@
                 return { source: 'Airplanes.live', flights: [] };
             }
             
-            const flights = data.ac.map((aircraft, index) => {
+            const flightPromises = data.ac.map(async (aircraft, index) => {
                 if (!aircraft.lat || !aircraft.lon) return null;
                 
-                return processFlightData({
+                return await processFlightData({
                     id: aircraft.hex || `airplaneslive_${index}`,
                     callsign: aircraft.flight || `APL${index}`,
                     country: aircraft.flag || 'Unknown',
@@ -993,14 +820,15 @@
                     lastContact: aircraft.seen ? new Date(Date.now() - aircraft.seen * 1000) : new Date(),
                     source: 'Airplanes.live'
                 });
-            }).filter(flight => flight !== null);
+            });
+            
+            const flights = (await Promise.all(flightPromises)).filter(flight => flight !== null);
             
             return { source: 'Airplanes.live', flights };
         } catch (error) {
-            console.log('Airplanes.live API unavailable:', error.message);
-            // Generate realistic flights as fallback
-            const flights = generateRealisticFlights(12, 'Airplanes.live');
-            return { source: 'Airplanes.live', flights };
+            console.log('Airplanes.live API unavailable - no fallback data:', error.message);
+            // Return empty flights array - no simulated data
+            return { source: 'Airplanes.live', flights: [] };
         }
     };
     
@@ -1021,10 +849,10 @@
                 return { source: 'ADSB.fi', flights: [] };
             }
             
-            const flights = data.ac.map((aircraft, index) => {
+            const flightPromises = data.ac.map(async (aircraft, index) => {
                 if (!aircraft.lat || !aircraft.lon) return null;
                 
-                return processFlightData({
+                return await processFlightData({
                     id: aircraft.hex || `adsbfi_${index}`,
                     callsign: aircraft.flight || `ADF${index}`,
                     country: aircraft.flag || 'Unknown',
@@ -1038,162 +866,115 @@
                     lastContact: aircraft.seen ? new Date(Date.now() - aircraft.seen * 1000) : new Date(),
                     source: 'ADSB.fi'
                 });
-            }).filter(flight => flight !== null);
+            });
+            
+            const flights = (await Promise.all(flightPromises)).filter(flight => flight !== null);
             
             return { source: 'ADSB.fi', flights };
         } catch (error) {
-            console.log('ADSB.fi API unavailable:', error.message);
-            // Generate realistic flights as fallback
-            const flights = generateRealisticFlights(9, 'ADSB.fi');
-            return { source: 'ADSB.fi', flights };
+            console.log('ADSB.fi API unavailable - no fallback data:', error.message);
+            // Return empty flights array - no simulated data
+            return { source: 'ADSB.fi', flights: [] };
         }
     };
-    
-    // Process AeroDataBox flight data
-    const processAeroDataBoxFlight = (flight, index, type) => {
-        // AeroDataBox provides detailed flight information
-        const departure = flight.departure || {};
-        const arrival = flight.arrival || {};
-        
-        // Estimate current position based on schedule and progress
-        const scheduledTime = new Date(type === 'departure' ? departure.scheduledTimeLocal : arrival.scheduledTimeLocal);
-        const estimatedTime = new Date(type === 'departure' ? departure.estimatedTimeLocal : arrival.estimatedTimeLocal);
-        const now = new Date();
-        
-        // Calculate progress based on time
-        const totalFlightTime = 4 * 60 * 60 * 1000; // Assume 4 hours average flight
-        const elapsedTime = now - scheduledTime;
-        const progress = Math.max(0, Math.min(1, elapsedTime / totalFlightTime));
-        
-        let currentLat, currentLon;
-        const depCoords = departure.airport?.icao === 'WSSS' ? CHANGI_AIRPORT : getAirportCoords(departure.airport?.iata);
-        const arrCoords = arrival.airport?.icao === 'WSSS' ? CHANGI_AIRPORT : getAirportCoords(arrival.airport?.iata);
-        
-        if (depCoords && arrCoords) {
-            currentLat = depCoords[0] + (arrCoords[0] - depCoords[0]) * progress;
-            currentLon = depCoords[1] + (arrCoords[1] - depCoords[1]) * progress;
-        } else {
-            // Default position near Singapore
-            currentLat = CHANGI_AIRPORT[0] + (Math.random() - 0.5) * 0.3;
-            currentLon = CHANGI_AIRPORT[1] + (Math.random() - 0.5) * 0.3;
-        }
-        
-        return processFlightData({
-            id: `aerodatabox_${flight.number}_${index}`,
-            callsign: flight.number || `ADB${index}`,
-            country: flight.airline?.name || 'Unknown',
-            longitude: currentLon,
-            latitude: currentLat,
-            baro_altitude: 20000 + Math.random() * 15000,
-            on_ground: progress < 0.05 || progress > 0.95,
-            velocity: 400 + Math.random() * 150,
-            true_track: Math.random() * 360,
-            vertical_rate: (Math.random() - 0.5) * 1500,
-            lastContact: new Date(),
-            source: 'AeroDataBox'
-        });
-    };
-    
-    // Generate realistic flights for demo when APIs are unavailable
-    const generateRealisticFlights = (count, source) => {
-        console.log(`Generating ${count} realistic flights for ${source}...`);
-        
-        const realAirlines = ['SQ', 'TR', 'MI', 'CX', 'TG', 'MH', 'QF', 'EK', 'LH', 'BA', 'AF', 'KL', 'JL', 'NH', 'QR', 'EY', 'AI', 'SV', 'TK', 'KE', 'CI', 'BR', 'OZ', 'JQ', 'FJ', 'PX', 'WF'];
-        const realDestinations = [
-            { code: 'BKK', name: 'Bangkok', coords: [13.6900, 100.7501] },
-            { code: 'KUL', name: 'Kuala Lumpur', coords: [2.7456, 101.7072] },
-            { code: 'CGK', name: 'Jakarta', coords: [-6.1256, 106.6559] },
-            { code: 'MNL', name: 'Manila', coords: [14.5086, 120.9114] },
-            { code: 'HKG', name: 'Hong Kong', coords: [22.3080, 113.9185] },
-            { code: 'NRT', name: 'Tokyo Narita', coords: [35.7656, 140.3864] },
-            { code: 'ICN', name: 'Seoul Incheon', coords: [37.4602, 126.4407] },
-            { code: 'SYD', name: 'Sydney', coords: [-33.9399, 151.1753] },
-            { code: 'LHR', name: 'London Heathrow', coords: [51.4700, -0.4543] },
-            { code: 'FRA', name: 'Frankfurt', coords: [50.0264, 8.5431] },
-            { code: 'CDG', name: 'Paris CDG', coords: [49.0097, 2.5479] },
-            { code: 'DXB', name: 'Dubai', coords: [25.2532, 55.3657] },
-            { code: 'BOM', name: 'Mumbai', coords: [19.0896, 72.8656] },
-            { code: 'DEL', name: 'Delhi', coords: [28.5562, 77.1000] },
-            { code: 'PEK', name: 'Beijing', coords: [40.0799, 116.6031] },
-            { code: 'PVG', name: 'Shanghai Pudong', coords: [31.1988, 121.3397] },
-            { code: 'TPE', name: 'Taipei', coords: [25.0797, 121.2342] },
-            { code: 'MEL', name: 'Melbourne', coords: [-37.6733, 144.8430] },
-            { code: 'PER', name: 'Perth', coords: [-31.9403, 115.9669] },
-            { code: 'AKL', name: 'Auckland', coords: [-37.0082, 174.7850] }
-        ];
-        
-        const flights = [];
-        
-        for (let i = 0; i < count; i++) {
-            const airline = realAirlines[Math.floor(Math.random() * realAirlines.length)];
-            const flightNumber = airline + (100 + Math.floor(Math.random() * 900));
-            const destination = realDestinations[Math.floor(Math.random() * realDestinations.length)];
-            const isArrival = Math.random() > 0.5;
-            
-            // Calculate realistic position with some randomness
-            const progress = Math.random() * 0.9 + 0.05; // 5% to 95% progress
-            let currentPos;
-            
-            if (isArrival) {
-                currentPos = [
-                    destination.coords[0] + (CHANGI_AIRPORT[0] - destination.coords[0]) * progress,
-                    destination.coords[1] + (CHANGI_AIRPORT[1] - destination.coords[1]) * progress
-                ];
-            } else {
-                currentPos = [
-                    CHANGI_AIRPORT[0] + (destination.coords[0] - CHANGI_AIRPORT[0]) * progress,
-                    CHANGI_AIRPORT[1] + (destination.coords[1] - CHANGI_AIRPORT[1]) * progress
-                ];
-            }
-            
-            // Add some realistic variation to position
-            currentPos[0] += (Math.random() - 0.5) * 0.1;
-            currentPos[1] += (Math.random() - 0.5) * 0.1;
-            
-            const flight = processFlightData({
-                id: `${source.toLowerCase()}_${flightNumber}_${i}`,
-                callsign: flightNumber,
-                country: destination.name.split(' ')[0],
-                longitude: currentPos[1],
-                latitude: currentPos[0],
-                baro_altitude: isArrival ? 15000 + Math.random() * 20000 : 20000 + Math.random() * 15000,
-                on_ground: Math.random() < 0.05, // 5% chance of being on ground
-                velocity: 350 + Math.random() * 200,
-                true_track: Math.random() * 360,
-                vertical_rate: (Math.random() - 0.5) * 2000,
-                lastContact: new Date(Date.now() - Math.random() * 300000), // Within last 5 minutes
-                source: source
-            });
-            
-            if (flight) flights.push(flight);
-        }
-        
-        return flights;
-    };
-    
-    // Get airport coordinates for major airports
+
+    // Get airport coordinates for major airports - comprehensive database
     const getAirportCoords = (iataCode) => {
+        if (!iataCode) return null;
+        
         const airports = {
-            'BKK': [13.6900, 100.7501],
-            'KUL': [2.7456, 101.7072],
-            'CGK': [-6.1256, 106.6559],
-            'MNL': [14.5086, 120.9114],
-            'HKG': [22.3080, 113.9185],
-            'NRT': [35.7656, 140.3864],
-            'ICN': [37.4602, 126.4407],
-            'SYD': [-33.9399, 151.1753],
-            'LHR': [51.4700, -0.4543],
-            'FRA': [50.0264, 8.5431],
-            'CDG': [49.0097, 2.5479],
-            'DXB': [25.2532, 55.3657],
-            'BOM': [19.0896, 72.8656],
-            'DEL': [28.5562, 77.1000],
-            'PEK': [40.0799, 116.6031],
-            'PVG': [31.1988, 121.3397],
-            'SIN': CHANGI_AIRPORT
+            // Major Asian Hubs
+            'SIN': CHANGI_AIRPORT,        // Singapore Changi
+            'SGN': [10.8231, 106.6297],   // Ho Chi Minh City (Tan Son Nhat)
+            'HAN': [21.0285, 105.8542],   // Hanoi (Noi Bai)
+            'DAD': [16.0544, 108.2022],   // Da Nang
+            'BKK': [13.6900, 100.7501],   // Bangkok Suvarnabhumi
+            'DMK': [13.9126, 100.6067],   // Bangkok Don Mueang
+            'KUL': [2.7456, 101.7072],    // Kuala Lumpur
+            'CGK': [-6.1256, 106.6559],   // Jakarta Soekarno-Hatta
+            'MNL': [14.5086, 120.9114],   // Manila Ninoy Aquino
+            'CEB': [10.3157, 123.8854],   // Cebu
+            'HKG': [22.3080, 113.9185],   // Hong Kong
+            'TPE': [25.0797, 121.2342],   // Taipei Taoyuan
+            'PEN': [5.2971, 100.2770],    // Penang International
+            'DPS': [-8.7467, 115.1672],   // Denpasar Bali
+            
+            // Japan
+            'NRT': [35.7656, 140.3864],   // Tokyo Narita
+            'HND': [35.5494, 139.7798],   // Tokyo Haneda
+            'KIX': [34.4348, 135.2440],   // Osaka Kansai
+            'ITM': [34.7851, 135.4380],   // Osaka Itami
+            
+            // South Korea
+            'ICN': [37.4602, 126.4407],   // Seoul Incheon
+            'GMP': [37.5583, 126.7906],   // Seoul Gimpo
+            
+            // China
+            'PEK': [40.0799, 116.6031],   // Beijing Capital
+            'PVG': [31.1988, 121.3397],   // Shanghai Pudong
+            'SHA': [31.1988, 121.3397],   // Shanghai
+            'CAN': [23.3924, 113.2988],   // Guangzhou
+            'SZX': [22.6393, 113.8108],   // Shenzhen
+            
+            // India
+            'BOM': [19.0896, 72.8656],    // Mumbai
+            'DEL': [28.5562, 77.1000],    // Delhi
+            'MAA': [12.9941, 80.1709],    // Chennai
+            'CCU': [22.6542, 88.4479],    // Kolkata
+            'BLR': [13.1979, 77.7063],    // Bangalore
+            'HYD': [17.2313, 78.4298],    // Hyderabad
+            
+            // Australia/New Zealand
+            'SYD': [-33.9399, 151.1753],  // Sydney Kingsford Smith
+            'MEL': [-37.6733, 144.8430],  // Melbourne
+            'PER': [-31.9403, 115.9669],  // Perth
+            'BNE': [-27.3842, 153.1175],  // Brisbane
+            'ADL': [-34.9285, 138.5304],  // Adelaide
+            'AKL': [-37.0082, 174.7850],  // Auckland
+            'CHC': [-43.4895, 172.5320],  // Christchurch
+            
+            // Middle East
+            'DXB': [25.2532, 55.3657],    // Dubai
+            'AUH': [24.4539, 54.6515],    // Abu Dhabi
+            'DOH': [25.2732, 51.6080],    // Doha
+            'MCT': [23.5933, 58.2844],    // Muscat
+            'KWI': [29.2267, 47.9689],    // Kuwait
+            'RUH': [24.9576, 46.6984],    // Riyadh
+            
+            // Europe
+            'LHR': [51.4700, -0.4543],    // London Heathrow
+            'LGW': [51.1481, -0.1903],    // London Gatwick
+            'FRA': [50.0264, 8.5431],     // Frankfurt
+            'CDG': [49.0097, 2.5479],     // Paris Charles de Gaulle
+            'AMS': [52.3105, 4.7683],     // Amsterdam
+            'ZUR': [47.4647, 8.5492],     // Zurich
+            'IST': [41.2753, 28.7519],    // Istanbul
+            'MUC': [48.3538, 11.7861],    // Munich
+            'FCO': [41.8003, 12.2389],    // Rome Fiumicino
+            
+            // North America
+            'JFK': [40.6413, -73.7781],   // New York JFK
+            'LAX': [34.0522, -118.2437],  // Los Angeles
+            'SFO': [37.6213, -122.3790],  // San Francisco
+            'ORD': [41.9742, -87.9073],   // Chicago O'Hare
+            'ATL': [33.6407, -84.4277],   // Atlanta
+            'YVR': [49.1939, -123.1844],  // Vancouver
+            'YYZ': [43.6777, -79.6248],   // Toronto
+            
+            // Africa
+            'CAI': [30.1127, 31.4000],    // Cairo
+            'JNB': [-26.1367, 28.2411],   // Johannesburg
+            'CPT': [-33.9690, 18.6021],   // Cape Town
+            'ADD': [8.9806, 38.7626],     // Addis Ababa
+            
+            // Others
+            'GRU': [-23.4322, -46.4692],  // São Paulo
+            'EZE': [-34.8222, -58.5358],  // Buenos Aires
+            'SCL': [-33.3928, -70.7858],  // Santiago
+            'LIM': [-12.0219, -77.1143]   // Lima
         };
         
-        return airports[iataCode] || null;
+        return airports[iataCode.toUpperCase()] || null;
     };
     const getAirlineName = (code) => {
         const airlines = {
@@ -1219,45 +1000,151 @@
         };
         return airlines[code] || airlines[code.substring(0, 2)] || null;
     };
-    
-    // Helper function to estimate destination based on position and heading
-    const estimateDestination = (lat, lon, heading, type) => {
-        const destinations = [
-            { name: 'Bangkok', coords: [13.6900, 100.7501], direction: 'NW' },
-            { name: 'Kuala Lumpur', coords: [2.7456, 101.7072], direction: 'NW' },
-            { name: 'Jakarta', coords: [-6.1256, 106.6559], direction: 'SW' },
-            { name: 'Manila', coords: [14.5086, 120.9114], direction: 'NE' },
-            { name: 'Hong Kong', coords: [22.3080, 113.9185], direction: 'N' },
-            { name: 'Tokyo', coords: [35.5494, 139.7798], direction: 'NE' },
-            { name: 'Seoul', coords: [37.4602, 126.4407], direction: 'N' },
-            { name: 'Sydney', coords: [-33.9399, 151.1753], direction: 'SE' },
-            { name: 'London', coords: [51.4700, -0.4543], direction: 'NW' },
-            { name: 'Dubai', coords: [25.2532, 55.3657], direction: 'W' },
-            { name: 'Mumbai', coords: [19.0896, 72.8656], direction: 'W' },
-            { name: 'Delhi', coords: [28.5562, 77.1000], direction: 'NW' }
-        ];
-        
-        // Simple direction mapping based on heading
-        let direction = 'Unknown';
-        if (heading >= 315 || heading < 45) direction = 'N';
-        else if (heading >= 45 && heading < 135) direction = 'E';
-        else if (heading >= 135 && heading < 225) direction = 'S';
-        else if (heading >= 225 && heading < 315) direction = 'W';
-        
-        // Find closest destination based on rough direction
-        const possibleDestinations = destinations.filter(dest => 
-            dest.direction.includes(direction[0]) || direction === 'Unknown'
-        );
-        
-        if (possibleDestinations.length > 0) {
-            return possibleDestinations[Math.floor(Math.random() * possibleDestinations.length)].name;
-        }
-        
-        return 'Unknown Destination';
+
+    // Get route information from flight codes and position analysis
+    const getAirlineRoute = async (airlineCode, callsign, flightType, apiData = null) => {
+        // For now, we only use real route data if the APIs provide it
+        // Most ADS-B APIs (OpenSky, Airplanes.live, ADSB.fi) don't include route info
+        // so we'll return null and use generic labels instead of fake data
+        return null;
     };
-    
+
+    // Helper function to get airport names from IATA codes
+    const getAirportName = (iataCode) => {
+        if (!iataCode) return null;
+        
+        const airports = {
+            // Major Asian Hubs
+            'SIN': 'Singapore Changi',
+            'SGN': 'Ho Chi Minh City',
+            'HAN': 'Hanoi',
+            'DAD': 'Da Nang',
+            'BKK': 'Bangkok Suvarnabhumi',
+            'DMK': 'Bangkok Don Mueang',
+            'KUL': 'Kuala Lumpur',
+            'CGK': 'Jakarta',
+            'MNL': 'Manila',
+            'CEB': 'Cebu',
+            'HKG': 'Hong Kong',
+            'TPE': 'Taipei',
+            'PEN': 'Penang',
+            'DPS': 'Denpasar Bali',
+            
+            // Japan
+            'NRT': 'Tokyo Narita',
+            'HND': 'Tokyo Haneda',
+            'KIX': 'Osaka Kansai',
+            'ITM': 'Osaka Itami',
+            
+            // South Korea
+            'ICN': 'Seoul Incheon',
+            'GMP': 'Seoul Gimpo',
+            
+            // China
+            'PEK': 'Beijing Capital',
+            'PVG': 'Shanghai Pudong',
+            'SHA': 'Shanghai Hongqiao',
+            'CAN': 'Guangzhou',
+            'SZX': 'Shenzhen',
+            
+            // India
+            'BOM': 'Mumbai',
+            'DEL': 'Delhi',
+            'MAA': 'Chennai',
+            'CCU': 'Kolkata',
+            'BLR': 'Bangalore',
+            'HYD': 'Hyderabad',
+            
+            // Australia/New Zealand
+            'SYD': 'Sydney',
+            'MEL': 'Melbourne',
+            'PER': 'Perth',
+            'BNE': 'Brisbane',
+            'ADL': 'Adelaide',
+            'AKL': 'Auckland',
+            'CHC': 'Christchurch',
+            
+            // Middle East
+            'DXB': 'Dubai',
+            'AUH': 'Abu Dhabi',
+            'DOH': 'Doha',
+            'MCT': 'Muscat',
+            'KWI': 'Kuwait',
+            'RUH': 'Riyadh',
+            
+            // Europe
+            'LHR': 'London Heathrow',
+            'LGW': 'London Gatwick',
+            'FRA': 'Frankfurt',
+            'CDG': 'Paris Charles de Gaulle',
+            'AMS': 'Amsterdam',
+            'ZUR': 'Zurich',
+            'IST': 'Istanbul',
+            'MUC': 'Munich',
+            'FCO': 'Rome Fiumicino',
+            
+            // North America
+            'JFK': 'New York JFK',
+            'LAX': 'Los Angeles',
+            'SFO': 'San Francisco',
+            'ORD': 'Chicago O\'Hare',
+            'ATL': 'Atlanta',
+            'YVR': 'Vancouver',
+            'YYZ': 'Toronto',
+            
+            // Africa
+            'CAI': 'Cairo',
+            'JNB': 'Johannesburg',
+            'CPT': 'Cape Town',
+            'ADD': 'Addis Ababa',
+            
+            // Others
+            'GRU': 'São Paulo',
+            'EZE': 'Buenos Aires',
+            'SCL': 'Santiago',
+            'LIM': 'Lima'
+        };
+        
+        return airports[iataCode.toUpperCase()] || null;
+    };
+
+    // Helper function to get airport codes from city names
+    const getAirportCode = (cityName) => {
+        const cityToCode = {
+            'Bangkok': 'BKK',
+            'Kuala Lumpur': 'KUL', 
+            'Hong Kong': 'HKG',
+            'Dubai': 'DXB',
+            'Doha': 'DOH',
+            'Jakarta': 'CGK',
+            'Tokyo': 'NRT',
+            'Seoul': 'ICN',
+            'Manila': 'MNL',
+            'Ho Chi Minh City': 'SGN',
+            'Delhi': 'DEL',
+            'Mumbai': 'BOM',
+            'Sydney': 'SYD',
+            'Melbourne': 'MEL',
+            'London': 'LHR',
+            'Paris': 'CDG',
+            'Frankfurt': 'FRA',
+            'Amsterdam': 'AMS',
+            'Zurich': 'ZUR',
+            'Istanbul': 'IST'
+        };
+        return cityToCode[cityName] || null;
+    };
+
+
+
+
+
+
+
     // Calculate flight progress based on position
     const calculateProgress = (lat, lon, type) => {
+        if (!lat || !lon || isNaN(lat) || isNaN(lon)) return 0.5; // Default progress if invalid coordinates
+        
         const distanceFromChangi = Math.sqrt(
             Math.pow(lat - CHANGI_AIRPORT[0], 2) + 
             Math.pow(lon - CHANGI_AIRPORT[1], 2)
@@ -1277,108 +1164,16 @@
     
     // Determine flight status
     const getFlightStatus = (altitude, velocity, onGround) => {
+        // Add safety checks for undefined/null values
+        altitude = altitude || 0;
+        velocity = velocity || 0;
+        onGround = onGround || false;
+        
         if (onGround) return 'On Ground';
         if (altitude < 5000) return 'Approaching';
         if (altitude > 30000 && velocity > 400) return 'En Route';
         if (velocity < 200) return 'Holding';
         return 'Flying';
-    };
-    // Simulate flight data (in real implementation, this would fetch from APIs like ADS-B Exchange, OpenSky, etc.)
-    const generateFlightData = (count = 25) => {
-        console.log(`Generating ${count} simulated flights...`);
-        
-        const airlines = ['SQ', 'TR', 'MI', 'CX', 'TG', 'MH', 'QF', 'EK', 'LH', 'BA', 'AF', 'KL', 'JL', 'NH'];
-        const airlineNames = {
-            'SQ': 'Singapore Airlines',
-            'TR': 'Scoot',
-            'MI': 'SilkAir',
-            'CX': 'Cathay Pacific',
-            'TG': 'Thai Airways',
-            'MH': 'Malaysia Airlines',
-            'QF': 'Qantas',
-            'EK': 'Emirates',
-            'LH': 'Lufthansa',
-            'BA': 'British Airways',
-            'AF': 'Air France',
-            'KL': 'KLM',
-            'JL': 'Japan Airlines',
-            'NH': 'ANA'
-        };
-        
-        const destinations = [
-            { name: 'Bangkok', coords: [13.6900, 100.7501], country: 'Thailand' },
-            { name: 'Kuala Lumpur', coords: [2.7456, 101.7072], country: 'Malaysia' },
-            { name: 'Jakarta', coords: [-6.1256, 106.6559], country: 'Indonesia' },
-            { name: 'Manila', coords: [14.5086, 120.9114], country: 'Philippines' },
-            { name: 'Hong Kong', coords: [22.3080, 113.9185], country: 'Hong Kong' },
-            { name: 'Tokyo', coords: [35.5494, 139.7798], country: 'Japan' },
-            { name: 'Seoul', coords: [37.4602, 126.4407], country: 'South Korea' },
-            { name: 'Sydney', coords: [-33.9399, 151.1753], country: 'Australia' },
-            { name: 'London', coords: [51.4700, -0.4543], country: 'United Kingdom' },
-            { name: 'Frankfurt', coords: [50.0264, 8.5431], country: 'Germany' },
-            { name: 'Paris', coords: [49.0097, 2.5479], country: 'France' },
-            { name: 'Dubai', coords: [25.2532, 55.3657], country: 'UAE' },
-            { name: 'Mumbai', coords: [19.0896, 72.8656], country: 'India' },
-            { name: 'Delhi', coords: [28.5562, 77.1000], country: 'India' },
-            { name: 'Beijing', coords: [40.0799, 116.6031], country: 'China' },
-            { name: 'Shanghai', coords: [31.1988, 121.3397], country: 'China' }
-        ];
-
-        const aircraftTypes = ['A320', 'A330', 'A350', 'A380', 'B737', 'B777', 'B787'];
-        const statuses = ['On Time', 'Delayed', 'Boarding', 'Departed', 'En Route', 'Descending', 'On Approach'];
-
-        const flights = [];
-        
-        // Generate random flights
-        for (let i = 0; i < count; i++) {
-            const airline = airlines[Math.floor(Math.random() * airlines.length)];
-            const flightNumber = airline + (100 + Math.floor(Math.random() * 900));
-            const destination = destinations[Math.floor(Math.random() * destinations.length)];
-            const isArrival = Math.random() > 0.5;
-            
-            // Calculate current position based on flight progress
-            const progress = Math.random();
-            let currentPos;
-            
-            if (isArrival) {
-                // Flight arriving at Singapore
-                currentPos = [
-                    destination.coords[0] + (CHANGI_AIRPORT[0] - destination.coords[0]) * progress,
-                    destination.coords[1] + (CHANGI_AIRPORT[1] - destination.coords[1]) * progress
-                ];
-            } else {
-                // Flight departing from Singapore
-                currentPos = [
-                    CHANGI_AIRPORT[0] + (destination.coords[0] - CHANGI_AIRPORT[0]) * progress,
-                    CHANGI_AIRPORT[1] + (destination.coords[1] - CHANGI_AIRPORT[1]) * progress
-                ];
-            }
-
-            const flight = {
-                id: `${flightNumber}_${i}`,
-                callsign: flightNumber,
-                airline: airline,
-                airlineName: airlineNames[airline],
-                type: isArrival ? 'arrival' : 'departure',
-                origin: isArrival ? destination.name : 'Singapore Changi',
-                destination: isArrival ? 'Singapore Changi' : destination.name,
-                currentPosition: currentPos,
-                originCoords: isArrival ? destination.coords : CHANGI_AIRPORT,
-                destinationCoords: isArrival ? CHANGI_AIRPORT : destination.coords,
-                altitude: 25000 + Math.floor(Math.random() * 15000),
-                speed: 400 + Math.floor(Math.random() * 200),
-                heading: Math.floor(Math.random() * 360),
-                progress: progress,
-                estimatedTime: new Date(Date.now() + (Math.random() * 4 * 60 * 60 * 1000)), // Next 4 hours
-                aircraftType: aircraftTypes[Math.floor(Math.random() * aircraftTypes.length)],
-                status: statuses[Math.floor(Math.random() * statuses.length)]
-            };
-
-            flights.push(flight);
-            airlineData.add(airline);
-        }
-
-        return flights;
     };
 
     // Create flight marker
@@ -1453,7 +1248,7 @@
                 <strong>Route:</strong> ${flight.origin} → ${flight.destination}<br>
                 <strong>Type:</strong> ${flight.type}<br>
                 <strong>Aircraft:</strong> ${flight.aircraftType}<br>
-                <strong>Altitude:</strong> ${flight.altitude.toLocaleString()} ft<br>
+                <strong>Altitude:</strong> ${(flight.altitude || 0).toLocaleString()} ft<br>
                 <strong>Speed:</strong> ${flight.speed} kts<br>
                 <strong>Heading:</strong> ${flight.heading}°<br>
                 <strong>Status:</strong> ${flight.status}<br>
@@ -1517,13 +1312,13 @@
                         <p><strong>Origin:</strong> ${flight.origin}</p>
                         <p><strong>Destination:</strong> ${flight.destination}</p>
                         <p><strong>Progress:</strong> ${(flight.progress * 100).toFixed(1)}%</p>
-                        <p><strong>ETA:</strong> ${flight.estimatedTime.toLocaleString()}</p>
+                        <p><strong>ETA:</strong> ${(flight.estimatedTime || new Date()).toLocaleString()}</p>
                     </div>
                 </div>
                 <div style="margin-top: 20px; padding: 15px; background: rgba(0, 188, 212, 0.1); border-radius: 10px;">
                     <h4 style="color: #00bcd4; margin-top: 0;">Current Status</h4>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                        <p><strong>Altitude:</strong> ${flight.altitude.toLocaleString()} ft</p>
+                        <p><strong>Altitude:</strong> ${(flight.altitude || 0).toLocaleString()} ft</p>
                         <p><strong>Speed:</strong> ${flight.speed} knots</p>
                         <p><strong>Heading:</strong> ${flight.heading}°</p>
                         <p><strong>Position:</strong> ${flight.currentPosition[0].toFixed(4)}°N, ${flight.currentPosition[1].toFixed(4)}°E</p>
@@ -1645,7 +1440,7 @@
                 </div>
             </div>
             <div style="margin-top: 20px; padding: 15px; background: rgba(0, 188, 212, 0.1); border-radius: 10px;">
-                <h4 style="color: #00bcd4; margin-top: 0;">Flight Status Distribution</h4>
+                <h4 style="color: #00bcd4; margin-top: 0; text-align: center;">Flight Status Distribution</h4>
                 <div style="display: flex; justify-content: space-around; text-align: center;">
                     <div>
                         <div style="color: #4CAF50; font-size: 1.2rem; font-weight: 500;">${onTime}</div>
@@ -1700,11 +1495,31 @@
         flightTypeSelect.on('change', function() {
             currentFilters.type = this.value;
             renderFlights();
+            
+            // Show filter status update
+            const typeText = this.value === 'all' ? 'all types' : this.value;
+            const airlineText = currentFilters.airline === 'all' ? 'all airlines' : currentFilters.airline;
+            const filteredCount = flightData.filter(flight => {
+                if (currentFilters.type !== 'all' && flight.type !== currentFilters.type) return false;
+                if (currentFilters.airline !== 'all' && flight.airline !== currentFilters.airline) return false;
+                return true;
+            }).length;
+            showStatusUpdate(`🔍 Filtered: ${filteredCount} ${typeText} flights from ${airlineText}`);
         });
 
         airlineSelect.on('change', function() {
             currentFilters.airline = this.value;
             renderFlights();
+            
+            // Show filter status update
+            const typeText = currentFilters.type === 'all' ? 'all types' : currentFilters.type;
+            const airlineText = this.value === 'all' ? 'all airlines' : this.value;
+            const filteredCount = flightData.filter(flight => {
+                if (currentFilters.type !== 'all' && flight.type !== currentFilters.type) return false;
+                if (currentFilters.airline !== 'all' && flight.airline !== currentFilters.airline) return false;
+                return true;
+            }).length;
+            showStatusUpdate(`🔍 Filtered: ${filteredCount} ${typeText} flights from ${airlineText}`);
         });
     };
 
@@ -1734,6 +1549,13 @@
                         flightData = [...realTimeFlights];
                         
                         console.log(`Updated with ${realTimeFlights.length} real-time flights, ${newFlights.length} new`);
+                        
+                        // Show status update for real-time refresh
+                        if (newFlights.length > 0) {
+                            showStatusUpdate(`✈️ ${newFlights.length} New Flights Detected`);
+                        } else {
+                            showStatusUpdate(`✈️ Flight positions updated (${realTimeFlights.length} flights)`);
+                        }
                         
                         // Update airline data
                         realTimeFlights.forEach(flight => {
@@ -1788,6 +1610,9 @@
                 console.log(`Successfully loaded ${realTimeFlights.length} real-time flights`);
                 flightData = realTimeFlights;
                 updateApiStatus('live', `Live • ${realTimeFlights.length} flights`);
+                
+                // Show status update
+                showStatusUpdate(`✈️ Flight Tracker Updated with ${realTimeFlights.length} Live Flights`);
                 
                 // Add airlines from real-time data
                 realTimeFlights.forEach(flight => {
@@ -1873,6 +1698,9 @@
     window.addEventListener('beforeunload', () => {
         stopLiveUpdates();
     });
+
+    // Make loadFlightData globally accessible for retry buttons
+    window.loadFlightData = loadFlightData;
 
     // Start the application
     setTimeout(initialize, 500);
