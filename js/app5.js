@@ -712,22 +712,40 @@
     const processFlightData = async (rawData) => {
         if (!rawData.longitude || !rawData.latitude) return null;
         
-        // Determine if it's arrival or departure based on position relative to Changi
+        // Determine if it's arrival or departure based on heading relative to Changi
         const distanceFromChangi = Math.sqrt(
             Math.pow(rawData.latitude - CHANGI_AIRPORT[0], 2) + 
             Math.pow(rawData.longitude - CHANGI_AIRPORT[1], 2)
         );
         
+        // Calculate bearing from aircraft to Changi
+        const bearingToChangi = Math.atan2(
+            CHANGI_AIRPORT[1] - rawData.longitude,
+            CHANGI_AIRPORT[0] - rawData.latitude
+        ) * 180 / Math.PI;
+        
+        // Normalize bearing to 0-360
+        const normalizedBearingToChangi = (bearingToChangi + 360) % 360;
+        
+        // Aircraft heading
+        const aircraftHeading = rawData.true_track || 0;
+        
+        // Calculate difference between aircraft heading and bearing to Changi
+        let headingDiff = Math.abs(aircraftHeading - normalizedBearingToChangi);
+        if (headingDiff > 180) headingDiff = 360 - headingDiff;
+        
         // Extract airline code from callsign
         const cleanCallsign = (rawData.callsign || '').trim();
         const airlineCode = cleanCallsign.replace(/[0-9]/g, '').substring(0, 3);
         
-        // Determine flight type based on altitude and distance
+        // Determine flight type based on heading direction relative to Changi
         let flightType = 'arrival';
-        if (rawData.baro_altitude && rawData.baro_altitude > 10000 && distanceFromChangi > 0.3) {
-            flightType = 'departure';
-        } else if (rawData.baro_altitude && rawData.baro_altitude < 5000 && distanceFromChangi < 0.2) {
+        if (headingDiff < 90) {
+            // Heading towards Changi = arrival
             flightType = 'arrival';
+        } else {
+            // Heading away from Changi = departure
+            flightType = 'departure';
         }
         
         // Get airline name
@@ -744,7 +762,7 @@
             destinationIata: rawData.destinationIata
         });
         
-        // Only use route info if we got real data, otherwise leave as generic
+        // Only use route info if we got real data, otherwise set up proper movement direction
         let origin, destination, originCoords, destinationCoords;
         
         if (routeInfo) {
@@ -753,11 +771,19 @@
             originCoords = routeInfo.originCoords;
             destinationCoords = routeInfo.destinationCoords;
         } else {
-            // No real route data available - use simple position-based labels
-            origin = `Live Flight ${cleanCallsign}`;
-            destination = 'Singapore Airspace';
-            originCoords = [rawData.latitude, rawData.longitude];
-            destinationCoords = CHANGI_AIRPORT;
+            // No real route data available - set up movement based on flight type
+            if (flightType === 'arrival') {
+                origin = `Flight ${cleanCallsign}`;
+                destination = 'Singapore Airspace';
+                originCoords = [rawData.latitude, rawData.longitude];
+                destinationCoords = CHANGI_AIRPORT;
+            } else {
+                // Departure - moving away from Changi
+                origin = 'Singapore Airspace';
+                destination = `Flight ${cleanCallsign}`;
+                originCoords = CHANGI_AIRPORT;
+                destinationCoords = [rawData.latitude, rawData.longitude];
+            }
         }
         
         return {
@@ -774,7 +800,6 @@
             altitude: Math.max(0, rawData.baro_altitude || 0),
             speed: Math.max(0, Math.round((rawData.velocity || 0) * 1.944)), // Convert m/s to knots
             heading: Math.max(0, Math.min(360, Math.round(heading || 0))),
-            progress: Math.max(0, Math.min(1, calculateProgress(rawData.latitude, rawData.longitude, flightType) || 0)),
             estimatedTime: new Date(Date.now() + (Math.random() * 4 * 60 * 60 * 1000)),
             aircraftType: getAircraftType(rawData.id) || 'Unknown',
             status: getFlightStatus(rawData.baro_altitude, rawData.velocity, rawData.on_ground) || 'Unknown',
@@ -1340,31 +1365,9 @@
 
     // Update flight positions (simulate movement)
     const updateFlightPositions = () => {
-        flightData.forEach(flight => {
-            if (flight.progress < 1) {
-                flight.progress += 0.005; // Small increment for smooth movement
-                
-                // Update current position based on progress
-                if (flight.type === 'arrival') {
-                    flight.currentPosition = [
-                        flight.originCoords[0] + (flight.destinationCoords[0] - flight.originCoords[0]) * flight.progress,
-                        flight.originCoords[1] + (flight.destinationCoords[1] - flight.originCoords[1]) * flight.progress
-                    ];
-                } else {
-                    flight.currentPosition = [
-                        flight.originCoords[0] + (flight.destinationCoords[0] - flight.originCoords[0]) * flight.progress,
-                        flight.originCoords[1] + (flight.destinationCoords[1] - flight.originCoords[1]) * flight.progress
-                    ];
-                }
-                
-                // Update altitude simulation
-                if (flight.type === 'arrival' && flight.progress > 0.8) {
-                    flight.altitude = Math.max(1000, flight.altitude - 500);
-                } else if (flight.type === 'departure' && flight.progress < 0.2) {
-                    flight.altitude = Math.min(35000, flight.altitude + 500);
-                }
-            }
-        });
+        // Remove artificial movement simulation - positions come from real API data
+        // Flight positions are updated when we fetch new data from APIs
+        console.log('Flight positions updated from real-time API data');
     };
 
     // Render flights on map
@@ -1532,25 +1535,37 @@
         updateInterval = setInterval(async () => {
             updateCounter++;
             
-            // Update flight positions every cycle
-            updateFlightPositions();
-            
-            // Refresh real-time data every 30 seconds (15 cycles at 2-second intervals)
-            if (updateCounter % 15 === 0) {
+            // Refresh real-time data every 15 seconds (7.5 cycles at 2-second intervals)
+            if (updateCounter % 8 === 0) {
                 console.log('Refreshing real-time flight data...');
                 try {
                     const realTimeFlights = await fetchRealTimeFlights();
                     if (realTimeFlights && realTimeFlights.length > 0) {
-                        // Update existing flights or add new ones
-                        const existingIds = new Set(flightData.map(f => f.id));
-                        const newFlights = realTimeFlights.filter(f => !existingIds.has(f.id));
+                        // Update flight positions with fresh API data
+                        const existingFlightMap = new Map(flightData.map(f => [f.id, f]));
                         
-                        // Replace with real-time flights only
+                        // Update existing flights with new positions or add new flights
+                        realTimeFlights.forEach(newFlight => {
+                            const existingFlight = existingFlightMap.get(newFlight.id);
+                            if (existingFlight) {
+                                // Update position and flight data from API
+                                existingFlight.currentPosition = newFlight.currentPosition;
+                                existingFlight.altitude = newFlight.altitude;
+                                existingFlight.speed = newFlight.speed;
+                                existingFlight.heading = newFlight.heading;
+                                existingFlight.status = newFlight.status;
+                                existingFlight.lastContact = newFlight.lastContact;
+                                existingFlight.verticalRate = newFlight.verticalRate;
+                            }
+                        });
+                        
+                        // Replace with all current flights (removes disappeared flights, adds new ones)
                         flightData = [...realTimeFlights];
                         
-                        console.log(`Updated with ${realTimeFlights.length} real-time flights, ${newFlights.length} new`);
+                        console.log(`Updated ${realTimeFlights.length} flight positions from real-time APIs`);
                         
                         // Show status update for real-time refresh
+                        const newFlights = realTimeFlights.filter(f => !existingFlightMap.has(f.id));
                         if (newFlights.length > 0) {
                             showStatusUpdate(`✈️ ${newFlights.length} New Flights Detected`);
                         } else {
@@ -1574,6 +1589,7 @@
                 }
             }
             
+            // Always re-render to show any updates
             renderFlights();
         }, 2000); // Update every 2 seconds
     };
