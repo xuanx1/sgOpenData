@@ -7,7 +7,8 @@
     // Performance hints only — visual styling lives in global.css
     const universalStyles = document.createElement('style');
     universalStyles.textContent = `
-        #flight-map5 { will-change: transform; transform: translateZ(0); }
+        /* will-change/translateZ removed — it forced an unnecessary
+           compositor layer the size of the map that hurt scroll perf */
         #flight-map5 .leaflet-popup-content-wrapper {
             background: #0F1226 !important;
             color: #E6ECF5;

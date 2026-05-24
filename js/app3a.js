@@ -216,59 +216,30 @@ async function displayLampPosts() {
         console.log(`🔦 Lamp ${index}: Power=${lamp.powerLevel}, Color=${powerConfig.color}`);
       }
       
-      // Create illumination circle first (so it appears behind the lamp)
+      // Single illumination circle per lamp (3-ring glow halo removed —
+      // 8000 SVG circles repainting on map move caused major scroll jank)
       const illuminationCircle = L.circle([lamp.latitude, lamp.longitude], {
         radius: powerConfig.radius,
         color: powerConfig.color,
-        weight: 1,
-        opacity: 0.6,
+        weight: 0,
+        opacity: 0,
         fillColor: powerConfig.color,
-        fillOpacity: powerConfig.intensity * 0.3,
+        fillOpacity: powerConfig.intensity * 0.25,
         interactive: false
       });
-      
-      // Add glow effect with multiple circles
-      for (let i = 1; i <= 3; i++) {
-        const glowCircle = L.circle([lamp.latitude, lamp.longitude], {
-          radius: powerConfig.radius + (i * 5),
-          color: powerConfig.color,
-          weight: 1,
-          opacity: (powerConfig.intensity * 0.2) / i,
-          fillOpacity: (powerConfig.intensity * 0.1) / (i * 2),
-          fillColor: powerConfig.color,
-          interactive: false
-        });
-        mapLayers3a.illuminationCircles.addLayer(glowCircle);
-      }
-      
       mapLayers3a.illuminationCircles.addLayer(illuminationCircle);
       
-      // Create lamp post marker
+      // Create lamp post marker — static glow only (no per-lamp animation,
+      // 2000 simultaneous keyframe animations cause severe scroll jank)
       const lampIcon = L.divIcon({
-        html: `
-          <div style="
-            width: 8px !important; 
-            height: 8px !important; 
-            background: ${powerConfig.color} !important; 
-            border-radius: 50% !important;
-            border: 2px solid #fff !important;
-            box-shadow: 
-              0 0 8px ${powerConfig.color},
-              0 0 16px ${powerConfig.color}aa,
-              0 0 24px ${powerConfig.color}66 !important;
-            animation: pulse 2s infinite !important;
-          "></div>
-          <style>
-            @keyframes pulse {
-              0% { transform: scale(1); opacity: 1; }
-              50% { transform: scale(1.2); opacity: 0.8; }
-              100% { transform: scale(1); opacity: 1; }
-            }
-          </style>
-        `,
+        html: `<div style="
+            width:7px;height:7px;background:${powerConfig.color};
+            border-radius:50%;border:1.5px solid #fff;
+            box-shadow:0 0 6px ${powerConfig.color},0 0 12px ${powerConfig.color}aa;
+          "></div>`,
         className: 'lamp-marker',
-        iconSize: [12, 12],
-        iconAnchor: [6, 6]
+        iconSize: [10, 10],
+        iconAnchor: [5, 5]
       });
       
       const marker = L.marker([lamp.latitude, lamp.longitude], {

@@ -323,7 +323,7 @@ a:hover { color: var(--st-red); }
     font-weight: 700;
     cursor: pointer;
     background: #fff;
-    transition: all 0.15s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .share-btn:hover { background: #000; color: #fff; border-color: #000; }
 
@@ -403,6 +403,14 @@ a:hover { color: var(--st-red); }
     margin: 0 auto;
 }
 .figure-inner { background: #fff; }
+
+/* Performance: let the browser skip painting figures that are far
+   off-screen. contain-intrinsic-size reserves their slot so the
+   scrollbar doesn't jump. */
+.figure-wide {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 900px;
+}
 .figure-eyebrow {
     font-family: 'Roboto Condensed', Roboto, sans-serif;
     font-size: 11px;
@@ -1525,13 +1533,12 @@ a:hover { color: var(--st-red); }
     bottom: 14px;
     left: 14px;
     z-index: 1000;
-    background: rgba(15,18,38,0.92);
+    background: #0F1226;
     color: #E6ECF5;
     border-left: 3px solid var(--st-red);
     padding: 12px 14px;
     min-width: 180px;
     font-family: 'Roboto', sans-serif;
-    backdrop-filter: blur(4px);
 }
 .st-graph-legend-title {
     font-family: 'Roboto Condensed', Roboto, sans-serif;
@@ -1577,15 +1584,7 @@ a:hover { color: var(--st-red); }
     background: transparent;
     border: 0;
 }
-.st-carpark-pin svg {
-    display: block;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
-    transition: transform 0.15s ease;
-}
-.st-carpark-pin:hover svg {
-    transform: scale(1.15);
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-}
+.st-carpark-pin svg { display: block; }
 
 /* =========================================================
    ST FLIGHT MARKERS (Leaflet)
@@ -1595,17 +1594,15 @@ a:hover { color: var(--st-red); }
     width: 16px;
     height: 16px;
     display: block;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
     transform-origin: 50% 50%;
 }
 .st-flight-marker.is-arrival   { color: #3FB6C9; }
 .st-flight-marker.is-departure { color: #E8B23A; }
-.st-flight-marker.is-live svg {
-    animation: stFlightPulse 2.6s ease-in-out infinite;
-}
-@keyframes stFlightPulse {
-    0%, 100% { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
-    50%      { filter: drop-shadow(0 0 5px rgba(255,255,255,0.65)) drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+/* Live indicator: small white ring via stroke, no filter animation
+   (filter:drop-shadow on N markers tanks scroll performance) */
+.st-flight-marker.is-live svg path {
+    stroke: #fff;
+    stroke-width: 1.1;
 }
 
 /* Airport pins */
@@ -1889,7 +1886,7 @@ a:hover { color: var(--st-red); }
     background: var(--bg-dark);
 }
 #network-graph4 canvas { border-radius: var(--radius-md); }
-#info-panel4 { transition: all 0.3s ease; }
+#info-panel4 { transition: opacity 0.3s ease; }
 #stats-panel4 h3 { margin-bottom: 10px; }
 
 /* Form controls inside viz cards — see .st-select / .st-input above */
@@ -1898,18 +1895,12 @@ a:hover { color: var(--st-red); }
 .sigma-node { cursor: pointer; }
 .sigma-edge { pointer-events: none; }
 
-/* Generic button hover */
-button { transition: all 0.2s ease; font-family: inherit; }
-button:hover { transform: translateY(-1px); }
+/* Generic button — specific transitions only, no transform-on-hover (the
+   global translateY caused unnecessary compositing for every button on the
+   page on hover, including Leaflet zoom controls). */
+button { font-family: inherit; }
 
-/* Animations */
 .dark-overlay { mix-blend-mode: multiply; }
-@keyframes lampGlow {
-    0% { opacity: 0.8; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.1); }
-    100% { opacity: 0.8; transform: scale(1); }
-}
-.lamp-glow { animation: lampGlow 3s ease-in-out infinite; }
 
 /* Flight tracker tooltip overrides */
 .leaflet-tooltip.flight-tooltip {

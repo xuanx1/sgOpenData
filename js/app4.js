@@ -2,38 +2,11 @@
 // Displays Singapore news articles with category-based coloring and interactive features
 
 (function() {
-    // Add universal CSS styles with performance optimizations
+    // Minimal helper styles. Will-change/translateZ on hundreds of SVG
+    // nodes spawned hundreds of compositor layers and HURT scroll perf;
+    // removed. Global `* { line-height }` removed for same reason.
     const universalStyles = document.createElement('style');
     universalStyles.textContent = `
-        * {
-            line-height: 1.5;
-        }
-        body {
-            line-height: 1.5;
-        }
-        /* Performance optimizations */
-        #network-graph4 {
-            will-change: transform;
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
-        }
-        #network-graph4 svg {
-            will-change: transform;
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
-        }
-        /* Improve scrolling and panning performance */
-        #container4 {
-            -webkit-overflow-scrolling: touch;
-            overflow-scrolling: touch;
-        }
-        /* Reduce expensive CSS operations */
-        .node, .link {
-            will-change: transform, opacity;
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
-        }
-        /* Loading animation */
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
