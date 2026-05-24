@@ -304,7 +304,7 @@ class NewsApiScheduler {
             console.log('✅ News Visualization updated successfully');
             
             // Show status update
-            this.showStatusUpdate(`📊 News Visualization updated with ${this.currentData.length} articles`);
+            this.showStatusUpdate(`News network updated · ${this.currentData.length} articles`);
         } else {
             console.error('❌ Visualization function not available');
         }
@@ -358,38 +358,20 @@ class NewsApiScheduler {
         return Math.random() * 0.4; // Different category = lower similarity
     }
     
-    // Show status update to user
+    // Show status update to user (shared .st-toast styled by global.css)
     showStatusUpdate(message) {
-        // Create or update status element
-        let statusElement = document.getElementById('news-api-status');
+        let statusElement = document.getElementById('st-toast');
         if (!statusElement) {
             statusElement = document.createElement('div');
-            statusElement.id = 'news-api-status';
-            statusElement.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: rgba(26, 26, 46, 0.95);
-                border: 1px solid rgba(100, 255, 218, 0.5);
-                border-radius: 8px;
-                padding: 10px 15px;
-                color: #64ffda;
-                font-size: 12px;
-                font-family: monospace;
-                z-index: 10000;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-                transition: opacity 0.3s ease;
-            `;
+            statusElement.id = 'st-toast';
+            statusElement.className = 'st-toast';
             document.body.appendChild(statusElement);
         }
-        
         statusElement.textContent = message;
-        statusElement.style.opacity = '1';
-        
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            statusElement.style.opacity = '0';
+        statusElement.classList.add('is-visible');
+        clearTimeout(statusElement._timer);
+        statusElement._timer = setTimeout(() => {
+            statusElement.classList.remove('is-visible');
         }, 5000);
     }
     

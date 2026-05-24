@@ -41,236 +41,64 @@
     `;
     document.head.appendChild(universalStyles);
 
-    // Initialize app container with dark space theme
+    // Initialize app container — chrome lives in ST figure wrapper
     const app4 = d3.select("#container4")
         .html("")
-        .style("position", "relative")
-        .style("padding", "0")
-        .style("background", "radial-gradient(ellipse at center, #1a1a2e 0%, #0f0f23 50%, #000000 100%)")
-        .style("min-height", "100vh")
-        .style("overflow", "hidden")
-        .append("div")
-        .style("position", "relative")
-        .style("margin", "0 auto")
-        .style("padding", "20px")
-        .style("width", "100%")
-        .style("max-width", "1400px")
-        .style("background", "transparent");
+        .classed("st-viz-card", true);
 
-    // Title with elegant styling
-    const titleContainer = app4.append("div")
-        .style("text-align", "center")
-        .style("margin-bottom", "30px")
-        .style("position", "relative");
-
-    titleContainer.append("h1")
-        .style("color", "#ffffff")
-        .style("font-size", "2.5rem")
-        .style("font-weight", "300")
-        .style("margin", "0")
-        .style("text-shadow", "0 0 20px rgba(255,255,255,0.3)")
-        .style("letter-spacing", "2px")
-        .text("Singapore News Network");
-
-    titleContainer.append("p")
-        .style("color", "#8892b0")
-        .style("font-size", "1.1rem")
-        .style("margin", "10px 0 0 0")
-        .style("font-weight", "300")
-        .text("Interactive visualization of news article relationships");
-
-    // Particle background canvas
+    // Particle background canvas (kept for graph backdrop, opacity 0)
     const particleCanvas = app4.append("canvas")
         .attr("id", "particle-canvas")
-        .style("position", "absolute")
-        .style("top", "0")
-        .style("left", "0")
-        .style("width", "100%")
-        .style("height", "100%")
-        .style("pointer-events", "none")
-        .style("z-index", "1");
+        .attr("class", "st-particle-canvas");
 
-    // Controls container with glass morphism effect
+    // Controls container
     const controlsContainer4 = app4.append("div")
-        .style("position", "relative")
-        .style("z-index", "10")
-        .style("margin-bottom", "20px")
-        .style("padding", "20px")
-        .style("background", "rgba(26, 26, 46, 0.8)")
-        .style("border", "1px solid rgba(255, 255, 255, 0.1)")
-        .style("border-radius", "15px")
-        .style("backdrop-filter", "blur(10px)")
-        .style("box-shadow", "0 8px 32px rgba(0, 0, 0, 0.3)")
-        .style("display", "flex")
-        .style("flex-wrap", "wrap")
-        .style("gap", "15px")
-        .style("align-items", "center");
+        .attr("class", "st-controls");
 
-    // Layout control buttons (only hierarchical bundling)
-    const layoutControls4 = controlsContainer4.append("div")
-        .style("display", "flex")
-        .style("gap", "10px")
-        .style("align-items", "center")
-        .style("margin-right", "30px");
-
-    // layoutControls4.append("label")
-    //     .style("color", "#64ffda")
-    //     .style("font-size", "0.95rem")
-    //     .style("font-weight", "500")
-    //     .style("margin-right", "12px")
-    //     .style("text-shadow", "0 0 10px rgba(100, 255, 218, 0.3)")
-    //     .text("Layout:");
-
-    // layoutControls4.append("div")
-    //     .style("padding", "8px 16px")
-    //     .style("border-radius", "25px")
-    //     .style("border", "1px solid #64ffda")
-    //     .style("background", "rgba(100, 255, 218, 0.2)")
-    //     .style("color", "#64ffda")
-    //     .style("font-size", "0.85rem")
-    //     .style("font-weight", "500")
-    //     .style("backdrop-filter", "blur(5px)")
-    //     .style("text-shadow", "0 0 10px rgba(100, 255, 218, 0.2)")
-    //     .style("box-shadow", "0 0 20px rgba(100, 255, 218, 0.4)")
-    //     .html("🧬 Hierarchical Bundling");
-
-    // Filter controls with modern styling
     const filterControls4 = controlsContainer4.append("div")
-        .style("display", "flex")
-        .style("gap", "15px")
-        .style("align-items", "center")
-        .style("flex-wrap", "wrap");
+        .attr("class", "st-filters");
 
     // Category filter
-    const categoryGroup = filterControls4.append("div")
-        .style("display", "flex")
-        .style("align-items", "center")
-        .style("gap", "8px");
-
-    categoryGroup.append("label")
-        .style("color", "#64ffda")
-        .style("font-size", "0.9rem")
-        .style("font-weight", "500")
-        .text("Category:");
-
+    const categoryGroup = filterControls4.append("div").attr("class", "st-filter-group");
+    categoryGroup.append("label").attr("class", "st-filter-label").text("Category");
     const categorySelect4 = categoryGroup.append("select")
         .attr("id", "category-filter4")
-        .style("padding", "8px 12px")
-        .style("border-radius", "20px")
-        .style("border", "1px solid rgba(100, 255, 218, 0.3)")
-        .style("background", "rgba(26, 26, 46, 0.9)")
-        .style("color", "#64ffda")
-        .style("font-size", "0.85rem")
-        .style("cursor", "pointer")
-        .style("backdrop-filter", "blur(5px)")
-        .style("transition", "all 0.3s ease");
+        .attr("class", "st-select");
 
     // Sentiment filter
-    const sentimentGroup = filterControls4.append("div")
-        .style("display", "flex")
-        .style("align-items", "center")
-        .style("gap", "8px");
-
-    sentimentGroup.append("label")
-        .style("color", "#64ffda")
-        .style("font-size", "0.9rem")
-        .style("font-weight", "500")
-        .text("Sentiment:");
-
+    const sentimentGroup = filterControls4.append("div").attr("class", "st-filter-group");
+    sentimentGroup.append("label").attr("class", "st-filter-label").text("Sentiment");
     const sentimentSelect4 = sentimentGroup.append("select")
         .attr("id", "sentiment-filter4")
-        .style("padding", "8px 12px")
-        .style("border-radius", "20px")
-        .style("border", "1px solid rgba(100, 255, 218, 0.3)")
-        .style("background", "rgba(26, 26, 46, 0.9)")
-        .style("color", "#64ffda")
-        .style("font-size", "0.85rem")
-        .style("cursor", "pointer")
-        .style("backdrop-filter", "blur(5px)")
-        .style("transition", "all 0.3s ease");
+        .attr("class", "st-select");
 
     // Search box
-    const searchGroup = filterControls4.append("div")
-        .style("display", "flex")
-        .style("align-items", "center")
-        .style("gap", "8px");
-
-    searchGroup.append("label")
-        .style("color", "#64ffda")
-        .style("font-size", "0.9rem")
-        .style("font-weight", "500")
-        .text("Search:");
-
+    const searchGroup = filterControls4.append("div").attr("class", "st-filter-group");
+    searchGroup.append("label").attr("class", "st-filter-label").text("Search");
     searchGroup.append("input")
-        .attr("type", "text")
+        .attr("type", "search")
         .attr("id", "search-input4")
-        .attr("placeholder", "Search articles...")
-        .style("padding", "8px 15px")
-        .style("border-radius", "20px")
-        .style("border", "1px solid rgba(100, 255, 218, 0.3)")
-        .style("background", "rgba(26, 26, 46, 0.9)")
-        .style("color", "#64ffda")
-        .style("font-size", "0.85rem")
-        .style("width", "200px")
-        .style("backdrop-filter", "blur(5px)")
-        .style("transition", "all 0.3s ease")
-        .style("outline", "none")
-        .on("focus", function() {
-            d3.select(this)
-                .style("border-color", "#64ffda")
-                .style("box-shadow", "0 0 20px rgba(100, 255, 218, 0.3)");
-        })
-        .on("blur", function() {
-            d3.select(this)
-                .style("border-color", "rgba(100, 255, 218, 0.3)")
-                .style("box-shadow", "none");
-        });
+        .attr("class", "st-input")
+        .attr("placeholder", "Search articles…");
 
-    // Graph container with space-like styling
+    // Graph container — dark canvas for contrast
     const graphContainer4 = app4.append("div")
         .attr("id", "network-graph4")
-        .style("height", "700px")
-        .style("position", "relative")
-        .style("z-index", "5")
-        .style("border-radius", "20px")
-        .style("background", "radial-gradient(circle at center, rgba(26, 26, 46, 0.3) 0%, rgba(15, 15, 35, 0.5) 50%, rgba(0, 0, 0, 0.8) 100%)")
-        .style("border", "1px solid rgba(100, 255, 218, 0.2)")
-        .style("box-shadow", "inset 0 0 50px rgba(0, 0, 0, 0.5), 0 0 50px rgba(100, 255, 218, 0.1)")
-        .style("overflow", "hidden")
+        .attr("class", "st-graph-canvas")
         .on("click", function() {
             console.log('=== GRAPH CONTAINER CLICKED ===');
         });
 
-    // Info panel with glass morphism
+    // Info panel (revealed on node click)
     const infoPanel4 = app4.append("div")
         .attr("id", "info-panel4")
-        .style("position", "relative")
-        .style("z-index", "10")
-        .style("margin-top", "20px")
-        .style("padding", "25px")
-        .style("background", "rgba(26, 26, 46, 0.8)")
-        .style("border", "1px solid rgba(100, 255, 218, 0.2)")
-        .style("border-radius", "15px")
-        .style("backdrop-filter", "blur(10px)")
-        .style("box-shadow", "0 8px 32px rgba(0, 0, 0, 0.3)")
-        .style("color", "#ffffff")
-        .style("font-size", "0.95rem")
+        .attr("class", "st-panel st-panel-light")
         .style("display", "none");
 
-    // Statistics panel with modern design
+    // Statistics panel
     const statsPanel4 = app4.append("div")
         .attr("id", "stats-panel4")
-        .style("position", "relative")
-        .style("z-index", "10")
-        .style("margin-top", "20px")
-        .style("padding", "25px")
-        .style("background", "rgba(26, 26, 46, 0.8)")
-        .style("border", "1px solid rgba(100, 255, 218, 0.2)")
-        .style("border-radius", "15px")
-        .style("backdrop-filter", "blur(10px)")
-        .style("box-shadow", "0 8px 32px rgba(0, 0, 0, 0.3)")
-        .style("color", "#ffffff")
-        .style("font-size", "0.95rem");
+        .attr("class", "st-panel");
     
     console.log('Stats panel created:', d3.select('#stats-panel4').node());
 
@@ -282,25 +110,25 @@
     // Cache for initial network state (nodes and links)
     let initialNetworkCache = null;
 
-    // Color schemes
+    // Newspaper-data palette — kept in sync with hierarchicalEdgeBundling.js
     const categoryColors4 = {
-        'politics': '#ff6b6b',      
-        'business': '#ecc542ff',     
-        'sports': '#16afd1ff',       
-        'technology': '#96ceb4',   
-        'health': '#ffeaa7',      
-        'entertainment': '#fd79a8', 
-        'science': '#a29bfe',   
-        'world': '#fd79a8',      
-        'opinion': '#74b9ff',    
-        'general': '#cfcfcfff',    
-        'default': '#00d6a1ff'  
+        'politics':      '#E2503B',
+        'business':      '#E8B23A',
+        'sports':        '#3FB6C9',
+        'technology':    '#6FB07A',
+        'health':        '#C97FA0',
+        'entertainment': '#B488D6',
+        'science':       '#5E8FD6',
+        'world':         '#D58A4E',
+        'opinion':       '#B0B6C8',
+        'general':       '#9BA3B5',
+        'default':       '#7B8497'
     };
 
     const sentimentColors4 = {
-        'positive': '#00ff88',   
-        'negative': '#ff4757', 
-        'neutral': '#b9b9b9ff'      
+        'positive': '#6FB07A',
+        'negative': '#E2503B',
+        'neutral':  '#B0B6C8'
     };
 
     // Particle system for background animation (optimized for performance)
@@ -513,7 +341,7 @@
         console.log('newsData4 current length:', newsData4.length);
         if (!data || data.length === 0) {
             console.error('No data available to create network');
-            d3.select('#network-graph4').html('<div style="text-align: center; color: #64ffda; padding: 50px;">No data available</div>');
+            d3.select('#network-graph4').html('<div class="st-graph-message">No data available</div>');
             updateStats4();
             return;
         }
@@ -528,8 +356,8 @@
         // ...existing code...
         setTimeout(() => {
             d3.select(`#layout-heb`)
-                .style("background", "rgba(100, 255, 218, 0.2)")
-                .style("border-color", "#64ffda")
+                .style("background", "#DDE3EC")
+                .style("border-color", "#0F69FF")
                 .style("box-shadow", "0 0 20px rgba(100, 255, 218, 0.4)");
         }, 100);
         // Update statistics
@@ -648,7 +476,7 @@
         console.log('Current filters:', currentFilter4);
         console.log('Total articles to filter:', newsData4.length);
         // Show loading indicator
-        d3.select('#network-graph4').html('<div style="text-align: center; color: #64ffda; padding: 50px;"><div style="display: inline-block; animation: spin 1s linear infinite; border: 2px solid rgba(100, 255, 218, 0.3); border-top: 2px solid #64ffda; border-radius: 50%; width: 20px; height: 20px; margin-right: 10px;"></div>Filtering data...</div>');
+        d3.select('#network-graph4').html('<div class="st-graph-message"><span class="st-spinner"></span>Filtering articles…</div>');
         // Use requestAnimationFrame to avoid blocking the UI
         requestAnimationFrame(() => {
             // Always apply filtered view, even if all filters are 'all'
@@ -704,11 +532,9 @@
                 }
             }
             
-            d3.select('#network-graph4').html(`<div style="text-align: center; color: #64ffda; padding: 50px;">
+            d3.select('#network-graph4').html(`<div class="st-graph-message">
                 <div>${message}</div>
-                <div style="margin-top: 15px; font-size: 0.9rem; color: #8892b0;">
-                    Try selecting "All Categories" or a different category from the dropdown.
-                </div>
+                <div class="st-graph-message-hint">Try selecting "All categories" or a different category.</div>
             </div>`);
             return;
         }
@@ -813,42 +639,24 @@
         panel.style('display', 'block');
         
         panel.html(`
-            <h3 style="margin-top: 0; color: #64ffda; text-shadow: 0 0 10px rgba(100, 255, 218, 0.3); font-weight: 300; font-size: 1.3rem;">${nodeData.title}</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
-                <div style="padding: 15px; background: rgba(100, 255, 218, 0.05); border-radius: 10px; border: 1px solid rgba(100, 255, 218, 0.2);">
-                    <div style="color: #64ffda; font-weight: 500; margin-bottom: 8px;">Article Details</div>
-                    <div style="color: #ffffff; line-height: 1.6;">
-                        <strong>Category:</strong> <span style="color: ${nodeData.color};">${nodeData.category}</span><br>
-                        <strong>Sentiment:</strong> <span style="color: ${sentimentColors4[nodeData.sentiment]};">${nodeData.sentiment}</span> (${nodeData.sentimentScore ? nodeData.sentimentScore.toFixed(3) : 'N/A'})<br>
-                        <strong>Author:</strong> <span style="color: #64ffda;">${nodeData.author || 'Unknown'}</span><br>
-                        <strong>Date:</strong> <span style="color: #64ffda;">${nodeData.publish_date || 'N/A'}</span>
-                    </div>
+            <div class="st-info-eyebrow">Article</div>
+            <h3 class="st-info-title">${nodeData.title}</h3>
+            <div class="st-info-grid">
+                <div class="st-info-cell">
+                    <div class="st-info-label">Details</div>
+                    <table class="st-info-table">
+                        <tr><td>Category</td><td><span class="st-info-chip" style="--chip-color:${nodeData.color};">${nodeData.category}</span></td></tr>
+                        <tr><td>Sentiment</td><td><span style="color:${sentimentColors4[nodeData.sentiment]};">${nodeData.sentiment}</span> (${nodeData.sentimentScore ? nodeData.sentimentScore.toFixed(3) : 'N/A'})</td></tr>
+                        <tr><td>Author</td><td>${nodeData.author || 'Unknown'}</td></tr>
+                        <tr><td>Date</td><td>${nodeData.publish_date || 'N/A'}</td></tr>
+                    </table>
                 </div>
-                <div style="padding: 15px; background: rgba(100, 255, 218, 0.05); border-radius: 10px; border: 1px solid rgba(100, 255, 218, 0.2);">
-                    <div style="color: #64ffda; font-weight: 500; margin-bottom: 8px;">Text Preview</div>
-                    <div style="max-height: 120px; overflow-y: auto; padding: 10px; background: rgba(0, 0, 0, 0.3); border-radius: 8px; color: #ffffff; font-size: 0.9rem; line-height: 1.5;">
-                        ${(nodeData.text || '').substring(0, 400)}${(nodeData.text || '').length > 400 ? '...' : ''}
-                    </div>
+                <div class="st-info-cell">
+                    <div class="st-info-label">Text preview</div>
+                    <div class="st-info-preview">${(nodeData.text || '').substring(0, 400)}${(nodeData.text || '').length > 400 ? '…' : ''}</div>
                 </div>
             </div>
-            ${nodeData.url ? `
-                <div style="text-align: center; margin-top: 20px;">
-                    <a href="${nodeData.url}" target="_blank" style="
-                        display: inline-block;
-                        padding: 10px 20px;
-                        background: rgba(100, 255, 218, 0.2);
-                        color: #64ffda;
-                        text-decoration: none;
-                        border-radius: 25px;
-                        border: 1px solid rgba(100, 255, 218, 0.5);
-                        transition: all 0.3s ease;
-                        font-weight: 500;
-                    " onmouseover="this.style.background='rgba(100, 255, 218, 0.3)'; this.style.boxShadow='0 0 20px rgba(100, 255, 218, 0.4)';" 
-                       onmouseout="this.style.background='rgba(100, 255, 218, 0.2)'; this.style.boxShadow='none';">
-                        🔗 Read Full Article
-                    </a>
-                </div>
-            ` : ''}
+            ${nodeData.url ? `<div class="st-info-actions"><a class="st-btn" href="${nodeData.url}" target="_blank" rel="noopener">Read full article</a></div>` : ''}
         `);
     };
 
@@ -874,10 +682,9 @@
         if (!currentData || currentData.length === 0) {
             console.log('No data available, showing empty state');
             d3.select('#stats-panel4').html(`
-                <h3 style="margin-top: 0; color: #64ffda; text-shadow: 0 0 10px rgba(100, 255, 218, 0.3);">Network Statistics</h3>
-                <div style="text-align: center; color: #ffffff; padding: 20px;">
-                    No data available
-                </div>
+                <div class="st-panel-eyebrow">Network statistics</div>
+                <h3 class="st-panel-title">Network statistics</h3>
+                <p class="st-panel-meta">No data available.</p>
             `);
             return;
         }
@@ -924,72 +731,58 @@
         const now = new Date();
         const dataRetrievalDate = now.toLocaleDateString('en-GB', {
             day: '2-digit',
-            month: 'long', 
+            month: 'long',
             year: 'numeric',
             timeZone: 'Asia/Singapore'
         });
-        
+
+        // Update the figure-source "Last loaded" stamp
+        const stamp = document.getElementById('news-last-updated');
+        if (stamp) stamp.textContent = `${dataRetrievalDate} · ${currentData.length} articles`;
+
         // Calculate total for percentage calculations
         const totalArticles = currentData.length;
         
         const statsHtml = `
-            <h3 style="margin-top: 0; color: #64ffda; text-shadow: 0 0 10px rgba(100, 255, 218, 0.3);">Network Statistics</h3>
-            <div style="margin-bottom: 20px; padding: 12px; background: rgba(100, 255, 218, 0.1); border-radius: 8px; border: 1px solid rgba(100, 255, 218, 0.3);">
-                <div style="color: #64ffda; font-weight: 500; font-size: 0.9rem;">📅 Live Data (${dataRetrievalDate}) - ${isFiltered ? `Showing ${currentData.length} filtered articles from ${newsData4.length} total` : `Showing all ${currentData.length} articles`}</div>
-                <div style="color: #8892b0; font-size: 0.8rem; margin-top: 2px;">🔄 News data is automatically updated daily at 6:00 AM Singapore Time</div>
-                <!-- <button onclick="window.refreshNewsData && window.refreshNewsData()" style="background: #64ffda; color: #1a1a1a; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; margin-top: 4px;">🔄 Refresh Now</button> -->
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
-                <div style="padding: 15px; background: rgba(100, 255, 218, 0.05); border-radius: 10px; border: 1px solid rgba(100, 255, 218, 0.2);">
-                    <div style="font-size: 1.1rem; color: #64ffda; margin-bottom: 10px; font-weight: 500;">Network Overview</div>
-                    <div style="color: #ffffff;"><strong>Articles:</strong> <span style="color: #64ffda;">${currentData.length}</span></div>
-                    <div style="color: #ffffff;"><strong>Connections:</strong> <span style="color: #64ffda;">${connectionCount}</span></div>
-                    <div style="color: #ffffff;"><strong>Categories:</strong> <span style="color: #64ffda;">${Object.keys(categoryCount).length}</span></div>
-                    <div style="margin-top: 8px; padding: 8px; background: rgba(0, 0, 0, 0.2); border-radius: 6px; font-size: 0.8rem; color: #8892b0; line-height: 1.4;">
-                        💡 <strong style="color: #64ffda;">Connections</strong> represent relationships between articles based on:<br>
-                        • Same category (+0.6 weight)<br>
-                        • Similar sentiment scores (+0.4 weight)<br>
-                        • Shared keywords in titles (+0.3 per word)<br>
-                        Only pairs with total weight >0.7 become connections.
-                    </div>
-                </div>
-                <div style="padding: 15px; background: rgba(100, 255, 218, 0.05); border-radius: 10px; border: 1px solid rgba(100, 255, 218, 0.2);">
-                    <div style="font-size: 1.1rem; color: #64ffda; margin-bottom: 10px; font-weight: 500;">Sentiment Distribution</div>
-                    <div style="color: #ffffff;"><span style="color: ${sentimentColors4.positive};">● Positive:</span> <span style="color: #64ffda;">${sentimentCount.positive}</span> <span style="color: #8892b0; font-size: 0.85rem;">(${((sentimentCount.positive / totalArticles) * 100).toFixed(1)}%)</span></div>
-                    <div style="color: #ffffff;"><span style="color: ${sentimentColors4.negative};">● Negative:</span> <span style="color: #64ffda;">${sentimentCount.negative}</span> <span style="color: #8892b0; font-size: 0.85rem;">(${((sentimentCount.negative / totalArticles) * 100).toFixed(1)}%)</span></div>
-                    <div style="color: #ffffff;"><span style="color: ${sentimentColors4.neutral};">● Neutral:</span> <span style="color: #64ffda;">${sentimentCount.neutral}</span> <span style="color: #8892b0; font-size: 0.85rem;">(${((sentimentCount.neutral / totalArticles) * 100).toFixed(1)}%)</span></div>
-                    <div style="margin-top: 8px; padding: 8px; background: rgba(0, 0, 0, 0.2); border-radius: 6px; font-size: 0.8rem; color: #8892b0; line-height: 1.4;">
-                        📊 <strong style="color: #64ffda;">Sentiment Scores</strong> are calculated using NLP analysis:<br>
-                        • <span style="color: ${sentimentColors4.positive};">Positive</span>: Score > 0.1 (optimistic, favorable content)<br>
-                        • <span style="color: ${sentimentColors4.negative};">Negative</span>: Score < -0.1 (critical, unfavorable content)<br>
-                        • <span style="color: ${sentimentColors4.neutral};">Neutral</span>: Score -0.1 to 0.1 (balanced, factual reporting)<br>
-                        Range: -1.0 (most negative) to +1.0 (most positive)
-                    </div>
-                </div>
+            <div class="st-panel-eyebrow">Network statistics</div>
+            <h3 class="st-panel-title">${isFiltered ? `${currentData.length} of ${newsData4.length} articles` : `${currentData.length} articles in the network`}</h3>
+            <p class="st-panel-meta">Live data as of ${dataRetrievalDate}. News updates automatically at 6 am SGT each day.</p>
+            <div class="st-panel-grid">
+                <section class="st-panel-section">
+                    <div class="st-panel-section-title">Network overview</div>
+                    <table class="st-panel-table">
+                        <tr><td>Articles</td><td>${currentData.length}</td></tr>
+                        <tr><td>Connections</td><td>${connectionCount}</td></tr>
+                        <tr><td>Categories</td><td>${Object.keys(categoryCount).length}</td></tr>
+                    </table>
+                    <p class="st-panel-foot">Connections are computed from shared category (+0.6), similar sentiment (+0.4) and shared title keywords (+0.3 per word). Pairs above 0.7 are linked.</p>
+                </section>
+                <section class="st-panel-section">
+                    <div class="st-panel-section-title">Sentiment distribution</div>
+                    <table class="st-panel-table">
+                        <tr><td><span class="st-dot" style="--dot:${sentimentColors4.positive};"></span>Positive</td><td>${sentimentCount.positive} <span class="st-panel-pct">(${((sentimentCount.positive / totalArticles) * 100).toFixed(1)}%)</span></td></tr>
+                        <tr><td><span class="st-dot" style="--dot:${sentimentColors4.negative};"></span>Negative</td><td>${sentimentCount.negative} <span class="st-panel-pct">(${((sentimentCount.negative / totalArticles) * 100).toFixed(1)}%)</span></td></tr>
+                        <tr><td><span class="st-dot" style="--dot:${sentimentColors4.neutral};"></span>Neutral</td><td>${sentimentCount.neutral} <span class="st-panel-pct">(${((sentimentCount.neutral / totalArticles) * 100).toFixed(1)}%)</span></td></tr>
+                    </table>
+                    <p class="st-panel-foot">Sentiment scored from −1.0 to +1.0 via NLP. Above 0.1 is positive; below −0.1 is negative; in between, neutral.</p>
+                </section>
             </div>
             ${Object.keys(categoryCount).length > 0 ? `
-                <div style="margin-top: 20px; padding: 15px; background: rgba(100, 255, 218, 0.05); border-radius: 10px; border: 1px solid rgba(100, 255, 218, 0.2);">
-                    <div style="font-size: 1.1rem; color: #64ffda; margin-bottom: 10px; font-weight: 500;">Category Distribution</div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
+                <section class="st-panel-section st-panel-section-wide">
+                    <div class="st-panel-section-title">Category distribution</div>
+                    <div class="st-category-grid">
                         ${Object.entries(categoryCount)
-                            .sort((a, b) => b[1] - a[1]) // Sort by count descending
+                            .sort((a, b) => b[1] - a[1])
                             .map(([category, count]) => {
                                 const percentage = ((count / totalArticles) * 100).toFixed(1);
-                                return `<div style="color: #ffffff; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; background: rgba(0, 0, 0, 0.2); border-radius: 6px;">
-                                    <span>
-                                        <span style="color: ${categoryColors4[category] || categoryColors4.default};">●</span> 
-                                        ${category.charAt(0).toUpperCase() + category.slice(1)}
-                                    </span>
-                                    <span style="color: #64ffda; font-weight: 500;">
-                                        ${count} <span style="color: #8892b0; font-size: 0.8rem;">(${percentage}%)</span>
-                                    </span>
+                                return `<div class="st-category-row">
+                                    <span class="st-category-label"><span class="st-dot" style="--dot:${categoryColors4[category] || categoryColors4.default};"></span>${category.charAt(0).toUpperCase() + category.slice(1)}</span>
+                                    <span class="st-category-value">${count} <span class="st-panel-pct">(${percentage}%)</span></span>
                                 </div>`;
                             }).join('')}
                     </div>
-                    <div style="margin-top: 12px; padding: 8px; background: rgba(0, 0, 0, 0.2); border-radius: 6px; font-size: 0.85rem; color: #8892b0;">
-                        📊 Percentages based on ${isFiltered ? 'filtered' : 'total'} articles for this analysis
-                    </div>
-                </div>
+                    <p class="st-panel-foot">Percentages based on ${isFiltered ? 'filtered' : 'all'} articles in this view.</p>
+                </section>
             ` : ''}
         `;
         
@@ -1526,7 +1319,7 @@
                     <p>Could not load news data from any source.</p>
                     <p><strong>Error:</strong> ${error.message}</p>
                     <div style="margin-top: 10px;">
-                        <button onclick="window.location.reload()" style="background: #64ffda; color: #1a1a1a; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                        <button onclick="window.location.reload()" style="background: #0F69FF; color: #fff; border: none; padding: 9px 16px; border-radius: 10px; cursor: pointer; font-weight: 600;">
                             Retry
                         </button>
                     </div>
@@ -1546,8 +1339,8 @@
         // Initial empty state for stats panel
         console.log('Setting initial stats panel content...');
         d3.select('#stats-panel4').html(`
-            <h3 style="margin-top: 0; color: #64ffda; text-shadow: 0 0 10px rgba(100, 255, 218, 0.3);">Network Statistics</h3>
-            <div style="text-align: center; color: #ffffff; padding: 20px;">
+            <h3 style="margin-top: 0; color: #0F69FF; text-shadow: none;">Network Statistics</h3>
+            <div style="text-align: center; color: #1B1F3A; padding: 20px;">
                 Loading data...
             </div>
         `);
@@ -1588,7 +1381,7 @@
                         <h3 style="color: #e74c3c;">Error loading NewsApiScheduler</h3>
                         <p>The news API scheduler failed to load. Please refresh the page.</p>
                         <div style="margin-top: 10px;">
-                            <button onclick="window.location.reload()" style="background: #64ffda; color: #1a1a1a; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                            <button onclick="window.location.reload()" style="background: #0F69FF; color: #fff; border: none; padding: 9px 16px; border-radius: 10px; cursor: pointer; font-weight: 600;">
                                 Refresh Page
                             </button>
                         </div>

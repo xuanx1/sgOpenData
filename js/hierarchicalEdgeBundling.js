@@ -4,19 +4,19 @@
 
 // Usage: hierarchicalEdgeBundling('#network-graph4', nodes, links)
 
-// Sophisticated contrasting color scheme - synchronized with app4.js
+// Newspaper-data palette — muted, distinguishable on the dark canvas
 const categoryColors = {
-    'politics': '#ff6b6b',      
-    'business': '#ecc542ff',     
-    'sports': '#16afd1ff',       
-    'technology': '#96ceb4',   
-    'health': '#ffeaa7',      
-    'entertainment': '#fd79a8', 
-    'science': '#a29bfe',   
-    'world': '#fd79a8',      
-    'opinion': '#74b9ff',    
-    'general': '#cfcfcfff',    
-    'default': '#00d6a1ff'  
+    'politics':      '#E2503B', // editorial red
+    'business':      '#E8B23A', // newsprint ochre
+    'sports':        '#3FB6C9', // teal
+    'technology':    '#6FB07A', // sage
+    'health':        '#C97FA0', // muted rose
+    'entertainment': '#B488D6', // lavender
+    'science':       '#5E8FD6', // blueprint
+    'world':         '#D58A4E', // burnt orange
+    'opinion':       '#B0B6C8', // newsprint grey
+    'general':       '#9BA3B5', // neutral grey
+    'default':       '#7B8497'  // ink grey
 };
 
 // Make sure the function is globally available
@@ -131,66 +131,22 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
     const g = svg.append('g')
         .attr('transform', `translate(${width/2},${height/2})`);
 
-    // Add zoom controls
+    // Add zoom controls — newspaper square buttons
     const controls = container
         .append('div')
-        .style('position', 'absolute')
-        .style('top', '10px')
-        .style('right', '10px')
-        .style('z-index', '1000')
-        .style('display', 'flex')
-        .style('flex-direction', 'column')
-        .style('gap', '5px');
+        .attr('class', 'st-graph-zoom');
 
-    // Zoom in button
-    controls.append('button')
-        .style('padding', '8px 12px')
-        .style('background', 'rgba(100, 255, 218, 0.2)')
-        .style('border', '1px solid rgba(100, 255, 218, 0.5)')
-        .style('border-radius', '4px')
-        .style('color', '#64ffda')
-        .style('cursor', 'pointer')
-        .style('font-size', '14px')
-        .text('🔍+')
-        .on('click', () => {
-            svg.transition().duration(300).call(
-                zoom.scaleBy, 1.5
-            );
-        });
+    controls.append('button').attr('class', 'st-graph-zoom-btn').text('+')
+        .attr('aria-label', 'Zoom in')
+        .on('click', () => svg.transition().duration(300).call(zoom.scaleBy, 1.5));
 
-    // Zoom out button
-    controls.append('button')
-        .style('padding', '8px 12px')
-        .style('background', 'rgba(100, 255, 218, 0.2)')
-        .style('border', '1px solid rgba(100, 255, 218, 0.5)')
-        .style('border-radius', '4px')
-        .style('color', '#64ffda')
-        .style('cursor', 'pointer')
-        .style('font-size', '14px')
-        .text('🔍−')
-        .on('click', () => {
-            svg.transition().duration(300).call(
-                zoom.scaleBy, 0.67
-            );
-        });
+    controls.append('button').attr('class', 'st-graph-zoom-btn').text('−')
+        .attr('aria-label', 'Zoom out')
+        .on('click', () => svg.transition().duration(300).call(zoom.scaleBy, 0.67));
 
-    // Reset zoom button
-    controls.append('button')
-        .style('padding', '8px 12px')
-        .style('background', 'rgba(100, 255, 218, 0.2)')
-        .style('border', '1px solid rgba(100, 255, 218, 0.5)')
-        .style('border-radius', '4px')
-        .style('color', '#64ffda')
-        .style('cursor', 'pointer')
-        .style('font-size', '14px')
-        .text('🎯')
-        .on('click', () => {
-            // Reset to center and scale 1 (identity transform since g is already centered)
-            svg.transition().duration(500).call(
-                zoom.transform,
-                d3.zoomIdentity
-            );
-        });
+    controls.append('button').attr('class', 'st-graph-zoom-btn').text('Reset')
+        .attr('aria-label', 'Reset zoom')
+        .on('click', () => svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity));
 
     // Update cursor style during drag
     svg.on('mousedown', () => svg.style('cursor', 'grabbing'))
@@ -447,7 +403,7 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
             })
             .attr('stroke', d => {
                 const nodeId = String(d.id || d.data.id);
-                return String(nodeId) === String(selectedNode) ? '#64ffda' : '#fff'; // Different stroke for selected
+                return String(nodeId) === String(selectedNode) ? '#fff' : 'rgba(255,255,255,0.6)';
             });
         };
         
@@ -493,28 +449,9 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
         // Create tooltip div for hover information
         const tooltip = container
             .append('div')
-            .style('position', 'absolute')
-            .style('background', 'rgba(26, 26, 46, 0.95)')
-            .style('border', '1px solid rgba(100, 255, 218, 0.5)')
-            .style('border-radius', '8px')
-            .style('padding', '10px')
-            .style('color', '#ffffff')
-            .style('font-size', '12px')
-            .style('max-width', '400px')
-            .style('min-width', '250px')
-            .style('z-index', '2000')
-            .style('pointer-events', 'auto')
-            .style('opacity', 0)
-            .style('backdrop-filter', 'blur(10px)')
-            .style('box-shadow', '0 4px 20px rgba(0, 0, 0, 0.5)')
-            .on('mouseenter', function() {
-                // Keep tooltip visible when hovering over it
-                d3.select(this).style('opacity', 1);
-            })
-            .on('mouseleave', function() {
-                // Hide tooltip when leaving it
-                d3.select(this).style('opacity', 0);
-            });
+            .attr('class', 'st-graph-tooltip')
+            .on('mouseenter', function() { d3.select(this).style('opacity', 1); })
+            .on('mouseleave', function() { d3.select(this).style('opacity', 0); });
         
         const nodeCircles = g.append('g').selectAll('circle')
             .data(leafNodes)
@@ -611,45 +548,20 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
                 tooltipX = Math.max(10, tooltipX);
                 tooltipY = Math.max(10, tooltipY);
                 
+                const catColor = (dynamicCategoryColors || categoryColors)[category] || (dynamicCategoryColors || categoryColors)['default'];
+                const linkHost = url ? (() => { try { return new URL(url).hostname.replace(/^www\./,''); } catch (e) { return url; } })() : '';
                 tooltip
                     .style('left', tooltipX + 'px')
                     .style('top', tooltipY + 'px')
                     .style('opacity', 1)
                     .html(`
-                        <div style="font-weight: bold; color: #64ffda; margin-bottom: 6px; word-wrap: break-word; white-space: normal; max-width: 350px; line-height: 1.3;">
-                            ${title}
-                        </div>
-                        <div style="margin-bottom: 4px;">
-                            <strong>Category:</strong> <span style="color: ${(dynamicCategoryColors || categoryColors)[category] || (dynamicCategoryColors || categoryColors)['default']};">${category}</span>
-                        </div>
-                        <div style="margin-bottom: 4px;">
-                            <strong>Connections:</strong> <span style="color: #ffd93d;">${nodeConnections}</span> 
-                            <span style="color: #64ffda; font-size: 10px;">(${densityLabel} density: ${densityPercentage}%)</span>
-                        </div>
-                        <div style="margin-bottom: 6px;">
-                            <strong>Sentiment:</strong> ${sentiment}
-                        </div>
-                        ${url ? `
-                            <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(100, 255, 218, 0.2);">
-                                <a href="${url}" target="_blank" rel="noopener noreferrer" style="
-                                    color: #64ffda; 
-                                    text-decoration: none; 
-                                    font-size: 10px; 
-                                    word-wrap: break-word; 
-                                    white-space: normal; 
-                                    max-width: 350px;
-                                    display: inline-block;
-                                    border: 1px solid rgba(100, 255, 218, 0.3);
-                                    padding: 4px 8px;
-                                    border-radius: 4px;
-                                    background: rgba(100, 255, 218, 0.1);
-                                    transition: all 0.2s ease;
-                                " onmouseover="this.style.background='rgba(100, 255, 218, 0.2)'; this.style.borderColor='#64ffda';" 
-                                   onmouseout="this.style.background='rgba(100, 255, 218, 0.1)'; this.style.borderColor='rgba(100, 255, 218, 0.3)';">
-                                    🔗 ${url.length > 60 ? url.substring(0, 60) + '...' : url}
-                                </a>
-                            </div>
-                        ` : ''}
+                        <div class="st-graph-tooltip-eyebrow"><span class="st-graph-tooltip-swatch" style="background:${catColor};"></span>${category}</div>
+                        <div class="st-graph-tooltip-title">${title}</div>
+                        <table class="st-graph-tooltip-table">
+                            <tr><td>Connections</td><td>${nodeConnections} <span class="st-graph-tooltip-pct">(${densityLabel} · ${densityPercentage}%)</span></td></tr>
+                            <tr><td>Sentiment</td><td>${sentiment}</td></tr>
+                        </table>
+                        ${url ? `<a class="st-graph-tooltip-link" href="${url}" target="_blank" rel="noopener noreferrer">Read on ${linkHost}</a>` : ''}
                     `);
             })
             .on('mouseout', (event, d) => {
@@ -713,91 +625,30 @@ window.hierarchicalEdgeBundling = function(containerSelector, nodes, links, orig
 
     console.log('Legend categories to show (from full dataset):', categoriesToShow.map(([cat]) => cat));
 
-    const legend = container
-        .append('div')
-        .style('position', 'absolute')
-        .style('bottom', '20px')
-        .style('left', '20px')
-        .style('z-index', '1000')
-        .style('background', 'rgba(26, 26, 46, 0.8)')
-        .style('border', '1px solid rgba(100, 255, 218, 0.2)')
-        .style('border-radius', '8px')
-        .style('padding', '10px')
-        .style('backdrop-filter', 'blur(10px)');
-    
-    // Add category legend
-    legend
-        .append('div')
-        .style('font-size', '12px')
-        .style('color', '#64ffda')
-        .style('font-weight', 'bold')
-        .style('margin-bottom', '8px')
-        .text('Categories');
-    
+    const legend = container.append('div').attr('class', 'st-graph-legend');
+
+    legend.append('div').attr('class', 'st-graph-legend-title').text('Categories');
+
     categoriesToShow.forEach(([category, color]) => {
-        const legendItem = legend
-            .append('div')
-            .style('display', 'flex')
-            .style('align-items', 'center')
-            .style('margin-bottom', '6px')
-            .style('font-size', '11px')
-            .style('color', '#ffffff');
-        
-        legendItem
-            .append('div')
-            .style('width', '10px')
-            .style('height', '10px')
-            .style('border-radius', '50%')
-            .style('background-color', color)
-            .style('border', '1px solid #fff')
-            .style('margin-right', '8px')
-            .style('flex-shrink', '0');
-        
-        legendItem
-            .append('span')
-            .text(category.charAt(0).toUpperCase() + category.slice(1));
+        const row = legend.append('div').attr('class', 'st-graph-legend-row');
+        row.append('span').attr('class', 'st-graph-legend-dot').style('background-color', color);
+        row.append('span').text(category.charAt(0).toUpperCase() + category.slice(1));
     });
-    
-    // Add connection density legend
-    legend
-        .append('div')
-        .style('margin-top', '12px')
-        .style('padding-top', '8px')
-        .style('border-top', '1px solid rgba(100, 255, 218, 0.2)')
-        .style('font-size', '12px')
-        .style('color', '#64ffda')
-        .style('font-weight', 'bold')
-        .style('margin-bottom', '8px')
-        .text('Connections Density');
-    
-    // Create density indicators
+
+    legend.append('div').attr('class', 'st-graph-legend-title is-secondary').text('Connection density');
+
     const densityLevels = [
-        { label: 'Low Density', opacity: 0.2, description: 'Few connections' },
-        { label: 'Medium Density', opacity: 0.5, description: 'Some connections' },
-        { label: 'High Density', opacity: 0.8, description: 'Many connections' }
+        { description: 'Few connections',  opacity: 0.25 },
+        { description: 'Some connections', opacity: 0.55 },
+        { description: 'Many connections', opacity: 0.90 }
     ];
-    
+
     densityLevels.forEach(level => {
-        const densityItem = legend
-            .append('div')
-            .style('display', 'flex')
-            .style('align-items', 'center')
-            .style('margin-bottom', '4px')
-            .style('font-size', '10px')
-            .style('color', '#ffffff');
-        
-        densityItem
-            .append('div')
-            .style('width', '20px')
-            .style('height', '2px')
-            .style('background-color', '#64ffda')
-            .style('opacity', level.opacity)
-            .style('margin-right', '8px')
-            .style('flex-shrink', '0');
-        
-        densityItem
-            .append('span')
-            .text(level.description);
+        const row = legend.append('div').attr('class', 'st-graph-legend-row');
+        row.append('span')
+            .attr('class', 'st-graph-legend-bar')
+            .style('opacity', level.opacity);
+        row.append('span').text(level.description);
     });
 };
 

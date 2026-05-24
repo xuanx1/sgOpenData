@@ -4,22 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exploring Singapore Open Data &#127480;&#127468;</title>
+    <title>Exploring Singapore through its public data | The Straits Times</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700&family=Roboto:wght@300;400;500;700;900&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+
     <link href="https://cdn.jsdelivr.net/npm/modern-normalize@2.0.0/modern-normalize.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.12/latin.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
         rel="stylesheet" />
     <link rel="stylesheet" href="style/global.css" />
-    
-    <!-- D3.js CDN -->
+
     <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
-    <!-- Leaflet CDN -->
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.min.js"></script>
-    <!-- Leaflet MarkerCluster CDN -->
     <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.min.js"></script>
-    
-    <!-- Sigma.js and Graphology for network visualization -->
+
     <script src="https://cdn.jsdelivr.net/npm/graphology@0.25.1/dist/graphology.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/graphology-layout-forceatlas2@0.10.1/dist/graphology-layout-forceatlas2.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js"></script>
@@ -27,39 +26,307 @@
 </head>
 
 <body>
-    <div id="container">
-        <div id="app"></div>
+
+    <!-- Top utility bar -->
+    <div class="st-utility">
+        <div class="st-utility-inner">
+            <div class="st-utility-left">
+                <a href="#" class="nav-link">ST Podcasts</a>
+                <span class="sep">|</span>
+                <a href="#" class="nav-link">ST Newsletters</a>
+                <span class="sep">|</span>
+                <a href="#" class="nav-link">eST</a>
+            </div>
+            <div class="st-utility-right">
+                <a href="#">Log in</a>
+                <a href="#" class="subscribe-pill">Subscribe</a>
+            </div>
+        </div>
     </div>
-    <div id="container2">
-        <div id="app2"></div>
-    </div>
-        <div id="container3a">
-        <div id="app3a"></div>
-    </div>
-        <div id="container3">
-        <div id="app3"></div>
-    </div>
-    <div id="container4">
-        <div id="app4"></div>
-    </div>
-    <div id="container5">
-        <div id="app5"></div>
-    </div>
-    
+
+    <!-- Masthead -->
+    <header class="st-masthead">
+        <div class="st-masthead-inner">
+            <button class="st-hamburger" aria-label="Menu">
+                <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+            </button>
+            <div class="st-masthead-side left"><span class="red-dot"></span>Sunday, 24 May 2026</div>
+            <div class="st-logo"><span class="the">The</span>Straits Times</div>
+            <div class="st-masthead-side right">
+                <span class="st-search">
+                    <svg viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                    <span class="st-search-label">Search</span>
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Primary nav -->
+    <nav class="st-nav">
+        <div class="st-nav-inner">
+            <a href="#">Singapore</a>
+            <a href="#">Asia</a>
+            <a href="#">World</a>
+            <a href="#">Business</a>
+            <a href="#">Opinion</a>
+            <a href="#">Life</a>
+            <a href="#" class="active">Tech</a>
+            <a href="#">Sport</a>
+            <a href="#">Food</a>
+            <a href="#">Multimedia</a>
+            <a href="#">Podcasts</a>
+            <a href="#">Video</a>
+        </div>
+    </nav>
+
+    <!-- Article -->
+    <article class="article">
+
+        <div class="article-eyebrow">
+            <a href="#">Tech</a>
+            <span class="sep">›</span>
+            <a href="#">Data &amp; Society</a>
+        </div>
+
+        <h1 class="headline">Exploring Singapore through its public data</h1>
+
+        <p class="standfirst">Six interactive visualisations built on live feeds from LTA DataMall and data.gov.sg — mapping the carparks, taxis, lamp posts, transit links, news cycle and the airspace above the island.</p>
+
+        <div class="byline">
+            <div class="byline-avatar">XL</div>
+            <div class="byline-info">
+                <div class="byline-name"><a href="#">Xuan</a></div>
+                <div class="byline-role">Data Journalist</div>
+            </div>
+        </div>
+
+        <div class="timestamps">
+            <div><strong>Published</strong> May 24, 2026, 8:00 AM SGT</div>
+            <div><strong>Updated</strong> May 24, 2026, 9:42 AM SGT</div>
+        </div>
+
+        <div class="share-row" aria-label="Share this article">
+            <span class="share-label">Share</span>
+            <div class="share-btn" title="Share on Facebook">f</div>
+            <div class="share-btn" title="Share on X">𝕏</div>
+            <div class="share-btn" title="Share on LinkedIn">in</div>
+            <div class="share-btn" title="Share via WhatsApp">W</div>
+            <div class="share-btn" title="Share via Telegram">T</div>
+            <div class="share-btn" title="Copy link">⌘</div>
+        </div>
+
+        <p class="dropcap"><strong>SINGAPORE</strong> — A decade after data.gov.sg opened the firehose, the Republic now publishes thousands of live and historical datasets covering everything from carpark vacancies to incoming flight paths. Stitch enough of them together, and a portrait of the city begins to assemble in real time.</p>
+
+        <p>The six visualisations below are exploratory — built directly on public feeds from the Land Transport Authority, the Urban Redevelopment Authority and the Department of Statistics. None of them require a permit, a press pass or a privileged login. Everything you see updates as the Republic moves.</p>
+
+        <div class="more-on">
+            <div class="more-on-label">More on this topic</div>
+            <a href="#">data.gov.sg at 10: How Singapore's open-data push is reshaping civic tech</a>
+        </div>
+
+        <h2>Where the cars sit, in real time</h2>
+
+        <p>HDB carparks publish their lot counts every minute. Map the live feed onto coordinates from the URA master plan, and the rush-hour heartbeat of the heartlands appears: full lots cluster around mature estates by 8pm, while car park barriers tick over in the CBD as offices empty.</p>
+
+        <figure id="parking" class="figure figure-wide sg-anchor">
+            <div class="figure-inner">
+                <div class="figure-eyebrow">Interactive Graphic · Mobility</div>
+                <h2 class="figure-title">Singapore HDB carparks, in real time</h2>
+                <p class="figure-sub">Live carpark availability across HDB estates. Hover any pin to see lots available and parking rates; toggle traffic cameras or the live traffic layer to overlay them.</p>
+                <div id="container"><div id="app"></div></div>
+                <p class="figure-source">Graphic <span class="credit">The Straits Times</span> &middot; Source: data.gov.sg, URA Master Plan &middot; Carparks refresh every 60s, cameras every 2 min &middot; Last updated <span id="parking-last-updated">—</span></p>
+            </div>
+        </figure>
+
+        <h2>Following the fleet</h2>
+
+        <p>The taxi-availability API returns the live positions of thousands of vehicles on the road at any moment. Plotted over the island, the data reveals a moving silhouette of demand — Orchard at lunchtime, Changi at the top of every hour, the heartlands after midnight.</p>
+
+        <figure id="taxi" class="figure figure-wide sg-anchor">
+            <div class="figure-inner">
+                <div class="figure-eyebrow">Interactive Graphic · Mobility</div>
+                <h2 class="figure-title">Where every taxi is right now</h2>
+                <p class="figure-sub">Live taxi positions from LTA DataMall. Toggle the heat map to see where demand is clustering; overlay live traffic to see what they're driving into.</p>
+                <div id="container2"><div id="app2"></div></div>
+                <p class="figure-source">Graphic <span class="credit">The Straits Times</span> &middot; Source: LTA DataMall &middot; Refreshes every 30 seconds &middot; Last updated <span id="taxi-last-updated">—</span></p>
+            </div>
+        </figure>
+
+        <div class="pull-quote">
+            <q>Open data is not a publication exercise. It is infrastructure. The interesting questions only emerge when the feeds are pointed at one another.</q>
+            <cite>A civic technologist working with data.gov.sg</cite>
+        </div>
+
+        <h2>An island lit by 100,000 lamps</h2>
+
+        <p>The Land Transport Authority maintains an inventory of every street lamp on the island. Cluster them, and the road network draws itself: arterial roads as ribbons of light, the expressways as the brightest seams.</p>
+
+        <figure id="lamps" class="figure figure-wide sg-anchor">
+            <div class="figure-inner">
+                <div class="figure-eyebrow">Interactive Graphic · Civic Infrastructure</div>
+                <h2 class="figure-title">An island lit by 100,000 lamps</h2>
+                <p class="figure-sub">Every lamp post mapped from the LTA inventory. Pin colour reflects power level (dim, normal, bright); the glow approximates illumination radius.</p>
+                <div id="container3a"><div id="app3a"></div></div>
+                <p class="figure-source">Graphic <span class="credit">The Straits Times</span> &middot; Source: LTA DataMall &middot; Static dataset &middot; Status <span id="lamps-status-line">—</span></p>
+            </div>
+        </figure>
+
+        <h2>The connectivity backbone</h2>
+
+        <p>The PULSE index combines bus stops, MRT stations and taxi pickups into a single connectivity score for each planning area. The result is a heat map of how easy it is to move through any part of the island — a measure that does not always track the price of property.</p>
+
+        <figure id="pulse" class="figure figure-wide sg-anchor">
+            <div class="figure-inner">
+                <div class="figure-eyebrow">Interactive Graphic · Transit</div>
+                <h2 class="figure-title">PULSE — a connectivity score for every planning area</h2>
+                <p class="figure-sub">MRT, bus, taxi and carpark density combined into a single 0–100 connectivity score for each URA planning area. Click any polygon to see the full breakdown.</p>
+                <div id="container3"><div id="app3"></div></div>
+                <p class="figure-source">Graphic <span class="credit">The Straits Times</span> &middot; Source: LTA DataMall, URA Master Plan, SingStat &middot; Live transit feeds, daily-updated polygons &middot; Status <span id="pulse-status-line">—</span></p>
+            </div>
+        </figure>
+
+        <h2>What the country is reading</h2>
+
+        <p>News headlines from Singaporean publications are parsed and grouped into clusters by topic. The resulting network shows how stories cross-pollinate between sections — a piece about housing inevitably pulls in finance, transport and politics within a few hops.</p>
+
+        <figure id="news" class="figure figure-wide sg-anchor">
+            <div class="figure-inner">
+                <div class="figure-eyebrow">Interactive Graphic · Public Discourse</div>
+                <h2 class="figure-title">How Singapore's news stories cluster</h2>
+                <p class="figure-sub">Hierarchical edge bundling of news articles. Stories that share a category, sentiment or keywords sit closer together. Hover a node for the article; click to isolate its direct neighbours.</p>
+                <div id="container4"><div id="app4"></div></div>
+                <p class="figure-source">Graphic <span class="credit">The Straits Times</span> &middot; Source: Live news APIs &middot; Updates daily at 6am SGT &middot; Last loaded <span id="news-last-updated">—</span></p>
+            </div>
+        </figure>
+
+        <h2>Eyes on the sky</h2>
+
+        <p>Every aircraft on approach to Changi or transiting Singapore's flight information region broadcasts an ADS-B signal. Aggregated and plotted, the data is a near-perfect record of one of the world's busiest pieces of airspace — and a quiet reminder that the island is also a stop on a much larger map.</p>
+
+        <figure id="flights" class="figure figure-wide sg-anchor">
+            <div class="figure-inner">
+                <div class="figure-eyebrow">Interactive Graphic · Aviation</div>
+                <h2 class="figure-title">Eyes on Singapore airspace</h2>
+                <p class="figure-sub">Every flight in the Singapore Flight Information Region, plotted in real time from OpenSky ADS-B feeds. Hover a triangle for the callsign; click for the full flight card.</p>
+                <div id="container5"><div id="app5"></div></div>
+                <p class="figure-source">Graphic <span class="credit">The Straits Times</span> &middot; Source: OpenSky Network, Changi Airport Group &middot; Refreshes every 30 seconds &middot; Last updated <span id="flights-last-updated">—</span></p>
+            </div>
+        </figure>
+
+        <h2>A city that publishes itself</h2>
+
+        <p>None of these visualisations exist in isolation. The lamp-post inventory feeds into the connectivity index; the carpark feed informs the taxi flow; the news graph picks up stories about the airspace. The point of an open-data ecosystem is not the individual feed — it is the cumulative effect of having so many pointed at one another.</p>
+
+        <div class="st-newsletter">
+            <h4>Stay in the know</h4>
+            <p>Get the day's most important news in your inbox. Sign up for our daily ST newsletter.</p>
+            <form onsubmit="event.preventDefault();">
+                <input type="email" placeholder="Your email address" />
+                <button type="submit">Sign up</button>
+            </form>
+        </div>
+
+        <div class="topics">
+            <span class="label">Topics</span>
+            <a class="topic-chip" href="#">Open Data</a>
+            <a class="topic-chip" href="#">data.gov.sg</a>
+            <a class="topic-chip" href="#">LTA DataMall</a>
+            <a class="topic-chip" href="#">Singapore</a>
+            <a class="topic-chip" href="#">Data Visualisation</a>
+            <a class="topic-chip" href="#">Civic Tech</a>
+        </div>
+
+        <section class="related">
+            <h3>Read more on Singapore's data</h3>
+            <div class="related-list">
+                <a href="#" class="related-card">
+                    <div class="related-eyebrow">Tech</div>
+                    <span class="related-title">How Singapore's open-data push reshaped the civic tech scene</span>
+                </a>
+                <a href="#" class="related-card">
+                    <div class="related-eyebrow">Opinion</div>
+                    <span class="related-title">The case for opening up even more of the government's data</span>
+                </a>
+                <a href="#" class="related-card">
+                    <div class="related-eyebrow">Data Story</div>
+                    <span class="related-title">Mapping the MRT: A decade of network expansion in five charts</span>
+                </a>
+                <a href="#" class="related-card">
+                    <div class="related-eyebrow">Singapore</div>
+                    <span class="related-title">What the LTA's live feeds tell us about peak-hour traffic</span>
+                </a>
+            </div>
+        </section>
+
+    </article>
+
+    <!-- Footer -->
+    <footer class="st-footer">
+        <div class="st-footer-inner">
+            <div class="st-footer-brand">
+                <span class="logo-mini"><span class="the">The</span>Straits Times</span>
+                <p style="margin:0 0 8px;">Singapore's national daily, in print and online, since 1845.</p>
+            </div>
+            <div>
+                <h4>Singapore</h4>
+                <ul>
+                    <li><a href="#">Politics</a></li>
+                    <li><a href="#">Courts &amp; Crime</a></li>
+                    <li><a href="#">Education</a></li>
+                    <li><a href="#">Environment</a></li>
+                    <li><a href="#">Transport</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Data &amp; Tech</h4>
+                <ul>
+                    <li><a href="https://datamall.lta.gov.sg/" target="_blank" rel="noopener">LTA DataMall</a></li>
+                    <li><a href="https://data.gov.sg/" target="_blank" rel="noopener">data.gov.sg</a></li>
+                    <li><a href="https://www.ura.gov.sg/maps/" target="_blank" rel="noopener">URA Master Plan</a></li>
+                    <li><a href="https://www.singstat.gov.sg/" target="_blank" rel="noopener">SingStat</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>About ST</h4>
+                <ul>
+                    <li><a href="#">Contact us</a></li>
+                    <li><a href="#">Advertise with us</a></li>
+                    <li><a href="#">Subscribe</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Newsletters</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Follow us</h4>
+                <ul>
+                    <li><a href="#">Facebook</a></li>
+                    <li><a href="#">X / Twitter</a></li>
+                    <li><a href="#">Instagram</a></li>
+                    <li><a href="#">YouTube</a></li>
+                    <li><a href="#">Telegram</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="st-footer-bottom">
+            <div>&copy; 2026 SPH Media Limited. All rights reserved. &middot; <a href="#">Terms &amp; Conditions</a> &middot; <a href="#">Privacy Policy</a> &middot; <a href="#">PDPA</a></div>
+            <div class="mockup-note">Design Mockup — Exploratory project, not affiliated with The Straits Times.</div>
+        </div>
+    </footer>
+
     <script src="js/app.js" async></script>
     <script src="js/app2.js" async></script>
     <script src="js/app3a.js" async></script>
     <script src="js/app3.js" async></script>
-    
+
     <!-- News API Scheduler for Live Data - Load BEFORE app4.js -->
     <script src="js/newsApiScheduler.js" defer></script>
-    
+
     <!-- D3 Hierarchical Edge Bundling Visualization - Load BEFORE app4.js -->
     <script src="js/hierarchicalEdgeBundling.js" defer></script>
-    
+
     <!-- Load app4.js after other dependencies -->
     <script src="js/app4.js" defer></script>
-    
+
     <!-- Load app5.js for flight tracking -->
     <script src="js/app5.js" defer></script>
 

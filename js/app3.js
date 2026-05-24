@@ -3,48 +3,36 @@
 
 console.log('🚀 Initializing Singapore Transportation Connectivity Index...');
 
+// Shared ST toast helper (uses the same #st-toast element as app5 / news scheduler)
+function stToast(message) {
+  let el = document.getElementById('st-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'st-toast';
+    el.className = 'st-toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = message;
+  el.classList.add('is-visible');
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove('is-visible'), 5000);
+}
+
 // Initialize app3 container
 const app3 = d3.select("#app3")
   .html("")
-  .style("position", "relative")
-  .style("margin-top", "20px")
-  .style("padding", "30px")
-  .append("div")
-  .style("margin", "0 auto")
-  .style("padding", "20px")
-  .style("border-radius", "10px")
-  .style("width", "100%")
-  .style("max-width", "1000px")
-  .style("background", "#0c0c1c")
-  .style("box-shadow", "0px 0px 2px hsla(0,0%,0%,0.2)");
-
-// Title
-app3.append("h1")
-  .style("color", "#eee")
-  .style("font-size", "1.4rem")
-  .style("margin-bottom", "15px")
-  .style("text-align", "center")
-  .text("🚇 PULSE Public Urban Linkage Seamless Efficiency Index");
+  .classed("st-viz-card", true);
 
 // Status indicator
 const statusDiv = app3.append("div")
   .attr("id", "connectivity-status")
-  .style("color", "#3498db")
-  .style("font-size", "14px")
-  .style("margin-bottom", "20px")
-  .style("padding", "12px")
-  .style("background", "#1a2332")
-  .style("border-radius", "6px")
-  .style("text-align", "center")
-  .text("🔄 Initializing connectivity analysis system...");
+  .attr("class", "st-badge")
+  .text("Initialising connectivity analysis…");
 
 // Map container
 const mapContainer = app3.append("div")
   .attr("id", "connectivity-map")
-  .style("height", "600px")
-  .style("border-radius", "8px")
-  .style("margin-bottom", "20px")
-  .style("border", "1px solid #333");
+  .attr("class", "st-viz-map");
 
 // Initialize Leaflet
 const connectivityMap = L.map('connectivity-map', {
@@ -146,7 +134,7 @@ function extractPlanningAreaName(description) {
 async function loadPlanningAreaPolygons() {
   try {
     console.log('🔄 Loading planning area polygons from pa.geojson...');
-    statusDiv.text("🗺️ Loading planning area polygons...");
+    statusDiv.attr("class", "st-badge").text("Loading planning area polygons…");
     
     const response = await fetch('./data/pa.geojson');
     
@@ -257,12 +245,12 @@ async function loadPlanningAreaPolygons() {
       throw new Error('No valid polygons could be loaded from GeoJSON');
     }
     
-    statusDiv.text(`✅ Loaded ${loadedCount} planning area polygons from GeoJSON`);
+    statusDiv.attr("class", "st-badge st-badge-success").text(`Loaded ${loadedCount} planning area polygons`);
     return true;
     
   } catch (error) {
     console.error('❌ Error loading planning area polygons:', error);
-    statusDiv.text(`⚠️ GeoJSON loading failed: ${error.message}. Using fallback data...`);
+    statusDiv.attr("class", "st-badge st-badge-warn").text(`GeoJSON failed — using fallback data (${error.message})`);
 
     return false;
   }
@@ -417,7 +405,7 @@ function isPointInPolygonRing(lat, lng, ring) {
 // Fetch bus stops data from local JSON file
 async function fetchBusStopsData() {
   try {
-    statusDiv.text("🚌 Fetching bus stops data...");
+    statusDiv.attr("class", "st-badge").text("Fetching bus stops…");
     
     // Load bus stops from local JSON file
     const response = await fetch('./data/bus-stops.json');
@@ -441,7 +429,7 @@ async function fetchBusStopsData() {
     return busStops;
   } catch (error) {
     console.error('Error fetching bus stops:', error);
-    statusDiv.text("⚠️ Using fallback bus stops data...");
+    statusDiv.attr("class", "st-badge st-badge-warn").text("Using fallback bus stops data");
     
     // Fallback to mock data if file loading fails
     const mockBusStops = [];
@@ -467,7 +455,7 @@ async function fetchBusStopsData() {
 // Fetch MRT stations data
 async function fetchMRTStationsData() {
   try {
-    statusDiv.text("🚇 Fetching MRT stations data...");
+    statusDiv.attr("class", "st-badge").text("Fetching MRT stations…");
     
     // Comprehensive MRT stations in Singapore with actual coordinates
     const mrtStations = [
@@ -682,7 +670,7 @@ async function displayMRTStations() {
       connectivityMap.removeLayer(mapLayers.mrtStations);
     }
     
-    statusDiv.text("🚇 Loading MRT stations on map...");
+    statusDiv.attr("class", "st-badge").text("Loading MRT stations…");
     
     // Get MRT stations data
     const mrtStations = await fetchMRTStationsData();
@@ -731,14 +719,11 @@ async function displayMRTStations() {
       
       // Create popup content
       const popupContent = `
-        <div style="font-family: Arial, sans-serif; min-width: 180px; background: #222222; color: #eee; padding: 8px; border-radius: 6px;">
-          <h4 style="margin: 0 0 8px 0; color: #fff;">🚇 ${station.name}</h4>
-          <div style="margin-bottom: 8px;">
-            <strong>Lines:</strong> ${station.lines.map(line => `<span style="background: ${lineColors[line] || '#757575'}; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-right: 3px;">${line}</span>`).join('')}
-          </div>
-          <div style="font-size: 12px; color: #ccc;">
-            📍 ${station.lat.toFixed(4)}, ${station.lon.toFixed(4)}
-          </div>
+        <div class="st-popup st-popup-dark">
+          <div class="st-popup-eyebrow">MRT station</div>
+          <div class="st-popup-title">${station.name}</div>
+          <p class="st-popup-meta">${station.lines.map(line => `<span class="st-line-chip" style="background:${lineColors[line] || '#757575'};">${line}</span>`).join(' ')}</p>
+          <p class="st-popup-source">${station.lat.toFixed(4)}, ${station.lon.toFixed(4)}</p>
         </div>
       `;
       
@@ -755,18 +740,16 @@ async function displayMRTStations() {
     connectivityMap.addLayer(mapLayers.mrtStations);
     
     statusDiv
-      .style("color", "#27ae60")
-      .style("background", "#1a4d3a")
-      .text(`✅ Displayed ${mrtStations.length} MRT stations on map`);
+      .attr("class", "st-badge st-badge-success")
+      .text(`Displayed ${mrtStations.length} MRT stations`);
     
     console.log(`✅ Displayed ${mrtStations.length} MRT stations on map`);
     
   } catch (error) {
     console.error('Error displaying MRT stations:', error);
     statusDiv
-      .style("color", "#e74c3c")
-      .style("background", "#4d1a1a")
-      .text("❌ Error loading MRT stations");
+      .attr("class", "st-badge st-badge-error")
+      .text("Could not load MRT stations");
   }
 }
 
@@ -778,7 +761,7 @@ async function displayBusStops() {
       connectivityMap.removeLayer(mapLayers.busStops);
     }
     
-    statusDiv.text("🚌 Loading bus stops on map...");
+    statusDiv.attr("class", "st-badge").text("Loading bus stops…");
     
     // Get bus stops data
     const busStops = await fetchBusStopsData();
@@ -814,20 +797,15 @@ async function displayBusStops() {
       
       // Create popup content
       const popupContent = `
-        <div style="font-family: Arial, sans-serif; min-width: 180px; background: #222222; color: #eee; padding: 8px; border-radius: 6px;">
-          <h4 style="margin: 0 0 8px 0; color: #fff;">🚌 ${stop.Description}</h4>
-          <div style="margin-bottom: 6px;">
-            <strong>Stop Code:</strong> ${stop.BusStopCode}
-          </div>
-          ${stop.RoadName !== 'N/A' ? `<div style="margin-bottom: 6px;">
-            <strong>Road:</strong> ${stop.RoadName}
-          </div>` : ''}
-          ${stop.wab ? `<div style="margin-bottom: 6px; color: #3498db;">
-            <strong>🦽 Wheelchair Accessible</strong>
-          </div>` : ''}
-          <div style="font-size: 12px; color: #ccc;">
-            📍 ${stop.Latitude.toFixed(4)}, ${stop.Longitude.toFixed(4)}
-          </div>
+        <div class="st-popup st-popup-dark">
+          <div class="st-popup-eyebrow">Bus stop</div>
+          <div class="st-popup-title">${stop.Description}</div>
+          <table class="st-popup-table">
+            <tr><td>Stop code</td><td>${stop.BusStopCode}</td></tr>
+            ${stop.RoadName !== 'N/A' ? `<tr><td>Road</td><td>${stop.RoadName}</td></tr>` : ''}
+            ${stop.wab ? `<tr><td>Access</td><td>Wheelchair friendly</td></tr>` : ''}
+          </table>
+          <p class="st-popup-source">${stop.Latitude.toFixed(4)}, ${stop.Longitude.toFixed(4)}</p>
         </div>
       `;
       
@@ -844,18 +822,16 @@ async function displayBusStops() {
     connectivityMap.addLayer(mapLayers.busStops);
     
     statusDiv
-      .style("color", "#27ae60")
-      .style("background", "#1a4d3a")
-      .text(`✅ Displayed ${displayStops.length} bus stops on map (${busStops.length} total loaded)`);
+      .attr("class", "st-badge st-badge-success")
+      .text(`Displayed ${displayStops.length} bus stops (${busStops.length} loaded)`);
     
     console.log(`✅ Displayed ${displayStops.length} bus stops on map out of ${busStops.length} total`);
     
   } catch (error) {
     console.error('Error displaying bus stops:', error);
     statusDiv
-      .style("color", "#e74c3c")
-      .style("background", "#4d1a1a")
-      .text("❌ Error loading bus stops");
+      .attr("class", "st-badge st-badge-error")
+      .text("Could not load bus stops");
   }
 }
 
@@ -867,13 +843,13 @@ async function displayTaxis() {
       connectivityMap.removeLayer(mapLayers.taxiAvailability);
     }
     
-    statusDiv.text("🚕 Loading taxis on map...");
+    statusDiv.attr("class", "st-badge").text("Loading taxis…");
     
     // Get taxi data
     const taxiData = await fetchTaxiAvailabilityData();
     
     if (!taxiData || taxiData.length === 0) {
-      statusDiv.text("⚠️ No taxi data available");
+      statusDiv.attr("class", "st-badge st-badge-warn").text("No taxi data available");
       return;
     }
     
@@ -884,7 +860,7 @@ async function displayTaxis() {
     const taxiCoordinates = taxiData[0]?.geometry?.coordinates || [];
     
     if (taxiCoordinates.length === 0) {
-      statusDiv.text("⚠️ No taxi coordinates found");
+      statusDiv.attr("class", "st-badge st-badge-warn").text("No taxi coordinates found");
       return;
     }
     
@@ -934,20 +910,14 @@ async function displayTaxis() {
       // Create popup content
       const areaCount = taxiCountByArea[planningArea] || 0;
       const popupContent = `
-        <div style="font-family: Arial, sans-serif; min-width: 180px; background: #222222; color: #eee; padding: 8px; border-radius: 6px;">
-          <h4 style="margin: 0 0 8px 0; color: #fff;">🚕 Available Taxi</h4>
-          <div style="margin-bottom: 6px;">
-            <strong>Planning Area:</strong> ${planningArea}
-          </div>
-          <div style="margin-bottom: 6px;">
-            <strong>Area Taxi Count:</strong> ${areaCount}
-          </div>
-          <div style="font-size: 12px; color: #ccc;">
-            📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}
-          </div>
-          <div style="font-size: 11px; color: #999; margin-top: 6px;">
-            Real-time data from Singapore Open Data
-          </div>
+        <div class="st-popup st-popup-dark">
+          <div class="st-popup-eyebrow">Available taxi</div>
+          <div class="st-popup-title">${planningArea}</div>
+          <table class="st-popup-table">
+            <tr><td>Area total</td><td>${areaCount}</td></tr>
+            <tr><td>Coordinates</td><td>${lat.toFixed(4)}, ${lng.toFixed(4)}</td></tr>
+          </table>
+          <p class="st-popup-source">Live from data.gov.sg</p>
         </div>
       `;
       
@@ -964,18 +934,16 @@ async function displayTaxis() {
     connectivityMap.addLayer(mapLayers.taxiAvailability);
     
     statusDiv
-      .style("color", "#f39c12")
-      .style("background", "#3d2914")
-      .text(`✅ Displayed ${displayTaxis.length} taxis on map (${taxiCoordinates.length} total available)`);
+      .attr("class", "st-badge st-badge-warn")
+      .text(`Displayed ${displayTaxis.length} of ${taxiCoordinates.length} taxis`);
     
     console.log(`✅ Displayed ${displayTaxis.length} taxis on map out of ${taxiCoordinates.length} total`);
     
   } catch (error) {
     console.error('Error displaying taxis:', error);
     statusDiv
-      .style("color", "#e74c3c")
-      .style("background", "#4d1a1a")
-      .text("❌ Error loading taxis");
+      .attr("class", "st-badge st-badge-error")
+      .text("Could not load taxis");
   }
 }
 
@@ -987,13 +955,13 @@ async function displayCarparks() {
       connectivityMap.removeLayer(mapLayers.carparks);
     }
     
-    statusDiv.text("🅿️ Loading carparks on map...");
+    statusDiv.attr("class", "st-badge").text("Loading carparks…");
     
     // Get carpark data
     const carparkData = await fetchCarparkData();
     
     if (!carparkData || carparkData.length === 0) {
-      statusDiv.text("⚠️ No carpark data available");
+      statusDiv.attr("class", "st-badge st-badge-warn").text("No carpark data available");
       return;
     }
     
@@ -1006,7 +974,7 @@ async function displayCarparks() {
     );
     
     if (carparksWithLocation.length === 0) {
-      statusDiv.text("⚠️ No carpark coordinates found");
+      statusDiv.attr("class", "st-badge st-badge-warn").text("No carpark coordinates found");
       return;
     }
     
@@ -1054,29 +1022,17 @@ async function displayCarparks() {
       // Create popup content
       const areaCount = carparkCountByArea[carpark.planningArea] || 0;
       const popupContent = `
-        <div style="font-family: Arial, sans-serif; min-width: 200px; background: #222222; color: #eee; padding: 8px; border-radius: 6px;">
-          <h4 style="margin: 0 0 8px 0; color: #fff;">🅿️ ${carpark.carpark_number}</h4>
-          <div style="margin-bottom: 6px;">
-            <strong>Planning Area:</strong> ${carpark.planningArea || 'Unknown'}
-          </div>
-          <div style="margin-bottom: 6px;">
-            <strong>Area Carpark Count:</strong> ${areaCount}
-          </div>
-          <div style="margin-bottom: 6px;">
-            <strong>Available Lots:</strong> ${availableLots}/${totalLots}
-          </div>
-          ${lotType !== 'C' ? `<div style="margin-bottom: 6px;">
-            <strong>Lot Type:</strong> ${lotType}
-          </div>` : ''}
-          <div style="margin-bottom: 6px; font-size: 12px;">
-            <strong>Address:</strong> ${carpark.address || 'Not available'}
-          </div>
-          <div style="font-size: 12px; color: #ccc;">
-            📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}
-          </div>
-          <div style="font-size: 11px; color: #999; margin-top: 6px;">
-            Real-time data from Singapore Open Data + HDB CSV
-          </div>
+        <div class="st-popup st-popup-dark">
+          <div class="st-popup-eyebrow">Carpark</div>
+          <div class="st-popup-title">${carpark.carpark_number}</div>
+          <table class="st-popup-table">
+            <tr><td>Planning area</td><td>${carpark.planningArea || 'Unknown'}</td></tr>
+            <tr><td>Area total</td><td>${areaCount}</td></tr>
+            <tr><td>Available lots</td><td>${availableLots} / ${totalLots}</td></tr>
+            ${lotType !== 'C' ? `<tr><td>Lot type</td><td>${lotType}</td></tr>` : ''}
+          </table>
+          <p class="st-popup-meta">${carpark.address || 'Address not available'}</p>
+          <p class="st-popup-source">${lat.toFixed(4)}, ${lng.toFixed(4)} · Live data</p>
         </div>
       `;
       
@@ -1093,25 +1049,23 @@ async function displayCarparks() {
     connectivityMap.addLayer(mapLayers.carparks);
     
     statusDiv
-      .style("color", "#2ecc71")
-      .style("background", "#1a4d3a")
-      .text(`✅ Displayed ${displayCarparks.length} carparks on map (${carparksWithLocation.length} total with coordinates)`);
+      .attr("class", "st-badge st-badge-success")
+      .text(`Displayed ${displayCarparks.length} of ${carparksWithLocation.length} carparks`);
     
     console.log(`✅ Displayed ${displayCarparks.length} carparks on map out of ${carparksWithLocation.length} with coordinates`);
     
   } catch (error) {
     console.error('Error displaying carparks:', error);
     statusDiv
-      .style("color", "#e74c3c")
-      .style("background", "#4d1a1a")
-      .text("❌ Error loading carparks");
+      .attr("class", "st-badge st-badge-error")
+      .text("Could not load carparks");
   }
 }
 
 // Fetch taxi availability data with enhanced counting functionality
 async function fetchTaxiAvailabilityData() {
   try {
-    statusDiv.text("🚕 Fetching taxi availability data...");
+    statusDiv.attr("class", "st-badge").text("Fetching taxi availability…");
     
     const response = await fetch(APIs.taxiAvailability);
     if (!response.ok) {
@@ -1176,12 +1130,12 @@ async function fetchTaxiAvailabilityData() {
     
     // Update status with taxi distribution summary
     const areasWithTaxis = Object.values(taxiCountByArea).filter(count => count > 0).length;
-    statusDiv.text(`🚕 Loaded ${taxiCount} taxis across ${areasWithTaxis} planning areas`);
+    statusDiv.attr("class", "st-badge st-badge-success").text(`Loaded ${taxiCount} taxis across ${areasWithTaxis} planning areas`);
     
     return data.features || [];
   } catch (error) {
     console.error('Error fetching taxi data:', error);
-    statusDiv.text("⚠️ Using fallback taxi data...");
+    statusDiv.attr("class", "st-badge st-badge-warn").text("Using fallback taxi data");
     return [];
   }
 }
@@ -1189,7 +1143,7 @@ async function fetchTaxiAvailabilityData() {
 // Fetch carpark availability data from data.gov.sg and match with local CSV data
 async function fetchCarparkData() {
   try {
-    statusDiv.text("🅿️ Fetching carpark data...");
+    statusDiv.attr("class", "st-badge").text("Fetching carpark data…");
     
     // Fetch carpark availability data
     const response = await fetch(APIs.carparks);
@@ -1333,7 +1287,7 @@ async function fetchCarparkData() {
 // Calculate connectivity scores for each planning area using density-based scoring
 async function calculateConnectivityScores() {
   try {
-    statusDiv.text("📊 Calculating connectivity scores...");
+    statusDiv.attr("class", "st-badge").text("Calculating connectivity scores…");
     
     // Fetch all transportation data
     const [busStops, mrtStations, taxiData, carparkData] = await Promise.all([
@@ -1511,67 +1465,27 @@ function createPlanningAreaPolygons() {
       };
       
       // Create detailed popup content
-    const popupContent = `
-        <div style="font-family: Arial, sans-serif; min-width: 250px; background: #222; color: #eee; padding: 10px; border-radius: 8px;">
-            <h3 style="margin: 0 0 10px 0; color: #fff;">${areaName}</h3>
-            <div style="background: linear-gradient(90deg, ${color} 0%, ${color} ${scoreData.totalScore}%, #444 ${scoreData.totalScore}%, #444 100%); 
-                            height: 20px; border-radius: 10px; margin: 5px 0; position: relative;">
-            <span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -48%); 
-                             font-weight: bold; color: white; font-size: 14px;">
-                ${scoreData.totalScore} / 100
-            </span>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-            <div style="background: #333; padding: 8px; border-radius: 5px; border-left: 3px solid #3498db; ">
-                🚌 Bus Access<br><br>
-                <span style="font-weight: normal">
-                Score: ${scoreData.busScore} / 100
-                <br>
-                Count: ${scoreData.busStops}
-                <br>
-                <small style="color: #80ccffff;">${scoreData.residentsPerBusStop} Residents per Bus Stop</small>
-                </span>
-            </div>
-            <div style="background: #333; padding: 8px; border-radius: 5px; border-left: 3px solid #9b59b6;">
-            🚇MRT Access<br><br>
-                <span style="font-weight: normal">
-                Score: ${scoreData.mrtScore} / 100
-                <br>
-                Count: ${scoreData.mrtStations}
-                <br>
-                <small style="color: #d89bf0ff;">${scoreData.residentsPerMRTStation} Residents per MRT Station</small>
-            </div>
-            <div style="background: #333; padding: 8px; border-radius: 5px; border-left: 3px solid #f39c12;">
-            🚕 Taxis<br><br>
-                <span style="font-weight: normal">
-                Score: ${scoreData.taxiScore} / 100<br>
-                Count: ${scoreData.taxis}
-                <br>
-                <small style="color: #fac46eff;">${scoreData.residentsPerTaxi} Residents per Taxi</small>
-            </div>
-            <div style="background: #333; padding: 8px; border-radius: 5px; border-left: 3px solid #2ecc71;">
-            🅿️ Parking<br><br>
-                <span style="font-weight: normal">
-                Score: ${scoreData.carparkScore} / 100
-                <br>
-                Count: ${scoreData.carparks}
-                <br>
-                <small style="color: #88f0b3ff;">${scoreData.residentsPerCarpark} Residents per Carpark</small>
-            </div>
-            </div>
-            
-            <div style="margin-top: 15px; padding: 8px; font-weight: normal; background: #2c3e50; border-radius: 5px;">
-            <strong>Population: Approximately </strong> ${scoreData.population.toLocaleString()} residents<br>
-            <strong>Scoring Method:</strong> Density-based (residents per facility)<br>
-            <strong>Overall Rating:</strong> 
-            ${scoreData.totalScore >= 85 ? '⭐⭐⭐⭐⭐ Excellent' : 
-                scoreData.totalScore >= 70 ? '⭐⭐⭐⭐⭐ Very Good' : 
-                scoreData.totalScore >= 55 ? '⭐⭐⭐⭐ Good' : 
-                scoreData.totalScore >= 40 ? '⭐⭐⭐ Fair' : 
-                scoreData.totalScore >= 25 ? '⭐⭐ Poor' : 
-                scoreData.totalScore >= 10 ? '⭐ Very Poor' : '☆ Extremely Poor'}
-            </div>
+      const rating = scoreData.totalScore >= 85 ? 'Excellent' :
+                     scoreData.totalScore >= 70 ? 'Very good' :
+                     scoreData.totalScore >= 55 ? 'Good' :
+                     scoreData.totalScore >= 40 ? 'Fair' :
+                     scoreData.totalScore >= 25 ? 'Poor' :
+                     scoreData.totalScore >= 10 ? 'Very poor' : 'Extremely poor';
+      const popupContent = `
+        <div class="st-popup st-popup-dark st-popup-wide">
+          <div class="st-popup-eyebrow">Planning area</div>
+          <div class="st-popup-title">${areaName}</div>
+          <div class="st-popup-score" style="--score-color:${color};">
+            <div class="st-popup-score-bar"><div class="st-popup-score-fill" style="width:${scoreData.totalScore}%;background:${color};"></div></div>
+            <div class="st-popup-score-value">${scoreData.totalScore} / 100</div>
+          </div>
+          <div class="st-popup-stat-grid">
+            <div><div class="st-popup-stat-label">Bus access</div><div class="st-popup-stat-value">${scoreData.busScore}/100 · ${scoreData.busStops} stops</div><div class="st-popup-stat-foot">${scoreData.residentsPerBusStop} residents per stop</div></div>
+            <div><div class="st-popup-stat-label">MRT access</div><div class="st-popup-stat-value">${scoreData.mrtScore}/100 · ${scoreData.mrtStations} stations</div><div class="st-popup-stat-foot">${scoreData.residentsPerMRTStation} residents per station</div></div>
+            <div><div class="st-popup-stat-label">Taxis</div><div class="st-popup-stat-value">${scoreData.taxiScore}/100 · ${scoreData.taxis}</div><div class="st-popup-stat-foot">${scoreData.residentsPerTaxi} residents per taxi</div></div>
+            <div><div class="st-popup-stat-label">Parking</div><div class="st-popup-stat-value">${scoreData.carparkScore}/100 · ${scoreData.carparks}</div><div class="st-popup-stat-foot">${scoreData.residentsPerCarpark} residents per lot</div></div>
+          </div>
+          <p class="st-popup-source">Population ${scoreData.population.toLocaleString()} · Density-based scoring · Rating: ${rating}</p>
         </div>
     `;
       
@@ -1624,108 +1538,64 @@ function displayAreaDetails(areaName) {
   const scoreData = connectivityScores[areaName];
   if (!scoreData) return;
   
+  const scoreColor = getConnectivityColor(scoreData.totalScore);
   const detailsPanel = app3.insert("div", "#connectivity-stats")
     .attr("id", "area-details")
-    .style("margin", "20px 0")
-    .style("padding", "20px")
-    .style("background", "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)")
-    .style("border-radius", "12px")
-    .style("border", `3px solid ${getConnectivityColor(scoreData.totalScore)}`)
-    .style("box-shadow", "0 8px 32px rgba(0,0,0,0.3)");
-  
-  // Title with selection indicator
+    .attr("class", "st-detail-panel")
+    .style("--score-color", scoreColor);
+
+  // Title row
   detailsPanel.append("div")
-    .style("display", "flex")
-    .style("align-items", "center")
-    .style("margin-bottom", "15px")
+    .attr("class", "st-detail-head")
     .html(`
-      <h2 style="color: #fff; margin: 0; font-size: 1.5rem; flex: 1;">
-        📍 ${areaName}
-      </h2>
-      <button id="clear-selection" style="
-        background: #e74c3c; color: white; border: none; 
-        padding: 8px 12px; border-radius: 6px; cursor: pointer;
-        font-size: 12px; font-weight: bold;
-      ">✕ Clear Selection</button>
+      <h3>${areaName}</h3>
+      <button id="clear-selection" class="st-btn st-btn-ghost st-btn-sm">Clear</button>
     `);
-  
-  // Add click handler for clear selection button
+
   d3.select("#clear-selection").on("click", function() {
     clearAreaSelection();
   });
-  
-  // Score visualization
-  const scoreColor = getConnectivityColor(scoreData.totalScore);
+
+  // Headline score
+  const rating = scoreData.totalScore >= 85 ? 'Excellent connectivity' :
+                 scoreData.totalScore >= 70 ? 'Very good connectivity' :
+                 scoreData.totalScore >= 55 ? 'Good connectivity' :
+                 scoreData.totalScore >= 40 ? 'Fair connectivity' :
+                 scoreData.totalScore >= 25 ? 'Poor connectivity' :
+                 scoreData.totalScore >= 10 ? 'Very poor connectivity' : 'Extremely poor';
   detailsPanel.append("div")
-    .style("background", scoreColor)
-    .style("color", "white")
-    .style("padding", "15px")
-    .style("border-radius", "8px")
-    .style("margin-bottom", "20px")
-    .style("text-align", "center")
-    .style("font-size", "1.2rem")
-    .style("font-weight", "bold")
+    .attr("class", "st-detail-headline")
     .html(`
-      🎯 Overall Connectivity Score: ${scoreData.totalScore}/100<br>
-      <div style="font-size: 0.9rem; margin-top: 5px; opacity: 0.9;">
-        ${scoreData.totalScore >= 85 ? '⭐⭐⭐⭐⭐ Excellent Connectivity' : 
-          scoreData.totalScore >= 70 ? '⭐⭐⭐⭐⭐ Very Good Connectivity' : 
-          scoreData.totalScore >= 55 ? '⭐⭐⭐⭐ Good Connectivity' : 
-          scoreData.totalScore >= 40 ? '⭐⭐⭐ Fair Connectivity' : 
-          scoreData.totalScore >= 25 ? '⭐⭐ Poor Connectivity' : 
-          scoreData.totalScore >= 10 ? '⭐ Very Poor Connectivity' : '☆ Extremely Poor Connectivity'}
-      </div>
+      <div class="st-detail-headline-value">${scoreData.totalScore}<span>/100</span></div>
+      <div class="st-detail-headline-label">${rating}</div>
     `);
-  
+
   // Detailed breakdown
-  const breakdownContainer = detailsPanel.append("div")
-    .style("display", "grid")
-    .style("grid-template-columns", "1fr 1fr")
-    .style("gap", "15px");
-  
-  // Transportation metrics
+  const breakdownContainer = detailsPanel.append("div").attr("class", "st-detail-grid");
+
   const transportMetrics = [
-    { icon: "🚇", label: "MRT Access", score: scoreData.mrtScore, count: scoreData.mrtStations, unit: "stations", weight: "35%" },
-    { icon: "🚌", label: "Bus Access", score: scoreData.busScore, count: scoreData.busStops, unit: "stops", weight: "30%" },
-    { icon: "🅿️", label: "Parking", score: scoreData.carparkScore, count: scoreData.carparks, unit: "carparks", weight: "20%" },
-    { icon: "🚕", label: "Taxi Access", score: scoreData.taxiScore, count: scoreData.taxis, unit: "available", weight: "15%" }
+    { label: "MRT access", score: scoreData.mrtScore, count: scoreData.mrtStations, unit: "stations", weight: "35%" },
+    { label: "Bus access", score: scoreData.busScore, count: scoreData.busStops, unit: "stops", weight: "30%" },
+    { label: "Parking", score: scoreData.carparkScore, count: scoreData.carparks, unit: "carparks", weight: "20%" },
+    { label: "Taxi access", score: scoreData.taxiScore, count: scoreData.taxis, unit: "available", weight: "15%" }
   ];
-  
+
   transportMetrics.forEach(metric => {
-    const metricDiv = breakdownContainer.append("div")
-      .style("background", "#2c3e50")
-      .style("padding", "15px")
-      .style("border-radius", "8px")
-      .style("border-left", `4px solid ${getConnectivityColor(metric.score)}`);
-    
-    metricDiv.html(`
-      <div style="color: #ecf0f1; font-weight: bold; margin-bottom: 8px;">
-        ${metric.icon} ${metric.label} <span style="font-size: 0.8rem; color: #bdc3c7;">(${metric.weight})</span>
-      </div>
-      <div style="background: linear-gradient(90deg, ${getConnectivityColor(metric.score)} 0%, ${getConnectivityColor(metric.score)} ${metric.score}%, #34495e ${metric.score}%, #34495e 100%); 
-                  height: 12px; border-radius: 6px; margin: 8px 0; position: relative;">
-        <span style="position: absolute; right: 5px; top: -2px; font-size: 10px; color: white; font-weight: bold;">
-          ${metric.score}/100
-        </span>
-      </div>
-      <div style="color: #bdc3c7; font-size: 0.85rem;">
-        ${metric.count} ${metric.unit} within 2km radius
-      </div>
+    breakdownContainer.append("div").attr("class", "st-detail-metric").html(`
+      <div class="st-detail-metric-head"><strong>${metric.label}</strong> <span>${metric.weight}</span></div>
+      <div class="st-detail-metric-bar"><div class="st-detail-metric-fill" style="width:${metric.score}%;background:${getConnectivityColor(metric.score)};"></div></div>
+      <div class="st-detail-metric-foot"><span>${metric.count} ${metric.unit} within 2km</span><strong>${metric.score}/100</strong></div>
     `);
   });
-  
-  // Population and area info
+
+  // Area statistics
   detailsPanel.append("div")
-    .style("margin-top", "15px")
-    .style("padding", "12px")
-    .style("background", "#34495e")
-    .style("border-radius", "6px")
-    .style("color", "#ecf0f1")
+    .attr("class", "st-detail-stats")
     .html(`
-      <strong>📊 Area Statistics:</strong><br>
-      Population: ${scoreData.population.toLocaleString()} residents<br>
-      Density: ${Math.round(scoreData.population / 4)} people/km² (estimated)<br>
-      Coordinates: ${PLANNING_AREAS[areaName].center[0].toFixed(4)}, ${PLANNING_AREAS[areaName].center[1].toFixed(4)}
+      <strong>Area statistics</strong>
+      <span>Population: ${scoreData.population.toLocaleString()} residents</span>
+      <span>Density: ~${Math.round(scoreData.population / 4).toLocaleString()} people/km² (estimated)</span>
+      <span>Coordinates: ${PLANNING_AREAS[areaName].center[0].toFixed(4)}, ${PLANNING_AREAS[areaName].center[1].toFixed(4)}</span>
     `);
 }
 
@@ -1766,19 +1636,22 @@ async function displayConnectivityScores() {
     
     // Update status
     statusDiv
-      .style("color", "#27ae60")
-      .style("background", "#1a4d3a")
-      .text(`✅ Density-based connectivity analysis complete! Analyzed ${Object.keys(scores).length} planning areas. Click any area to highlight.`);
-    
+      .attr("class", "st-badge st-badge-success")
+      .text(`Density-based connectivity analysis complete — ${Object.keys(scores).length} planning areas. Click any area to highlight.`);
+
+    const stamp = document.getElementById('pulse-status-line');
+    if (stamp) stamp.textContent = `${Object.keys(scores).length} planning areas scored`;
+
     // Display summary statistics
     displaySummaryStats(scores);
-    
+
   } catch (error) {
     console.error('Error displaying connectivity scores:', error);
     statusDiv
-      .style("color", "#e74c3c")
-      .style("background", "#4d1a1a")
-      .text(`❌ Error loading connectivity data: ${error.message}`);
+      .attr("class", "st-badge st-badge-error")
+      .text(`Could not load connectivity data — ${error.message}`);
+    const stamp = document.getElementById('pulse-status-line');
+    if (stamp) stamp.textContent = 'Failed to load';
   }
 }
 
@@ -1789,64 +1662,34 @@ function displaySummaryStats(scores) {
   
   const statsContainer = app3.append("div")
     .attr("id", "connectivity-stats")
-    .style("margin-top", "20px")
-    .style("display", "grid")
-    .style("grid-template-columns", "1fr 1fr 1fr")
-    .style("gap", "15px");
-  
+    .attr("class", "st-stat-grid");
+
   // Calculate statistics
   const scoreValues = Object.values(scores).map(s => s.totalScore);
   const avgScore = Math.round(scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length);
   const maxScore = Math.max(...scoreValues);
   const minScore = Math.min(...scoreValues);
-  
+
   const topArea = Object.entries(scores).find(([name, data]) => data.totalScore === maxScore);
   const bottomArea = Object.entries(scores).find(([name, data]) => data.totalScore === minScore);
-  
-  // Top performing area
-  statsContainer.append("div")
-    .style("background", "#1a4d3a")
-    .style("padding", "15px")
-    .style("border-radius", "8px")
-    .style("border", "1px solid #27ae60")
-    .html(`
-      <h4 style="color: #27ae60; margin: 0 0 10px 0;">🏆 Best Connectivity</h4>
-      <div style="color: #eee;">
-        <strong>${topArea[0]}</strong><br>
-        Score: ${topArea[1].totalScore}/100<br>
-        Population: ${topArea[1].population.toLocaleString()}
-      </div>
-    `);
-  
-  // Average statistics
-  statsContainer.append("div")
-    .style("background", "#1a2332")
-    .style("padding", "15px")
-    .style("border-radius", "8px")
-    .style("border", "1px solid #3498db")
-    .html(`
-      <h4 style="color: #3498db; margin: 0 0 10px 0;">📊 Island Average</h4>
-      <div style="color: #eee;">
-        <strong>Average Score: ${avgScore}/100</strong><br>
-        Range: ${minScore} - ${maxScore}<br>
-        Areas Analyzed: ${scoreValues.length}
-      </div>
-    `);
-  
-  // Lowest performing area
-  statsContainer.append("div")
-    .style("background", "#4d1a1a")
-    .style("padding", "15px")
-    .style("border-radius", "8px")
-    .style("border", "1px solid #e74c3c")
-    .html(`
-      <h4 style="color: #e74c3c; margin: 0 0 10px 0;">⚠️ Needs Improvement</h4>
-      <div style="color: #eee;">
-        <strong>${bottomArea[0]}</strong><br>
-        Score: ${bottomArea[1].totalScore}/100<br>
-        Population: ${bottomArea[1].population.toLocaleString()}
-      </div>
-    `);
+
+  statsContainer.append("div").attr("class", "st-stat st-stat-high").html(`
+    <div class="st-stat-label">Best connectivity</div>
+    <div class="st-stat-value">${topArea[0]}</div>
+    <div class="st-stat-foot">Score ${topArea[1].totalScore}/100 · Pop. ${topArea[1].population.toLocaleString()}</div>
+  `);
+
+  statsContainer.append("div").attr("class", "st-stat").html(`
+    <div class="st-stat-label">Island average</div>
+    <div class="st-stat-value">${avgScore}/100</div>
+    <div class="st-stat-foot">Range ${minScore} – ${maxScore} · ${scoreValues.length} areas</div>
+  `);
+
+  statsContainer.append("div").attr("class", "st-stat st-stat-low").html(`
+    <div class="st-stat-label">Needs improvement</div>
+    <div class="st-stat-value">${bottomArea[0]}</div>
+    <div class="st-stat-foot">Score ${bottomArea[1].totalScore}/100 · Pop. ${bottomArea[1].population.toLocaleString()}</div>
+  `);
 }
 
 // Function to display taxi analysis summary
@@ -1888,58 +1731,37 @@ function displayTaxiAnalysisSummary() {
   }
   
   // Update status with summary
-  statusDiv.text(`🚕 Analysis: ${totalTaxis} taxis across ${areasWithTaxis} areas. Top: ${sortedAreas[0][0]} (${sortedAreas[0][1]} taxis)`);
+  statusDiv.attr("class", "st-badge st-badge-success").text(`${totalTaxis} taxis across ${areasWithTaxis} areas. Top: ${sortedAreas[0][0]} (${sortedAreas[0][1]})`);
   
   console.log('🚕 === END TAXI ANALYSIS ===\n');
 }
 
 // Add control buttons
-const controlsContainer = app3.append("div")
-  .style("margin-top", "20px")
-  .style("display", "flex")
-  .style("gap", "10px")
-  .style("justify-content", "center")
-  .style("flex-wrap", "wrap");
+const controlsContainer = app3.append("div").attr("class", "st-viz-toolbar");
 
 // Refresh button
 controlsContainer.append("button")
-  .text("🔄 Refresh Analysis")
-  .style("padding", "12px 24px")
-  .style("background", "#3498db")
-  .style("color", "#fff")
-  .style("border", "none")
-  .style("border-radius", "6px")
-  .style("cursor", "pointer")
-  .style("font-size", "14px")
-  .style("font-weight", "bold")
+  .attr("class", "st-btn")
+  .text("Refresh analysis")
   .on("click", async function() {
-    d3.select(this).text("🔄 Refreshing...").property("disabled", true);
+    d3.select(this).text("Refreshing…").property("disabled", true);
     try {
       await displayConnectivityScores();
-      displayTaxiAnalysisSummary(); // Add taxi analysis to refresh
-      d3.select(this).text("🔄 Refresh Analysis").property("disabled", false);
+      displayTaxiAnalysisSummary();
+      d3.select(this).text("Refresh analysis").property("disabled", false);
     } catch (error) {
-      d3.select(this).text("❌ Error - Try Again").property("disabled", false);
+      d3.select(this).text("Error · try again").property("disabled", false);
     }
   });
 
 // Export data button
 controlsContainer.append("button")
-  .text("⬆️")
-  .style("padding", "12px")
-  .style("background", "#27ae60")
-  .style("color", "#fff")
-  .style("border", "none")
-  .style("border-radius", "6px")
-  .style("cursor", "pointer")
-  .style("font-size", "18px")
-  .style("font-weight", "bold")
-  .style("width", "48px")
-  .style("height", "48px")
-  .attr("title", "Export Data")
+  .attr("class", "st-btn st-btn-ghost")
+  .text("Export CSV")
+  .attr("title", "Export connectivity data as CSV")
   .on("click", function() {
     if (Object.keys(connectivityScores).length === 0) {
-      alert("No data to export. Please run the analysis first.");
+      stToast("No data to export — run the analysis first.");
       return;
     }
     
@@ -1958,223 +1780,139 @@ controlsContainer.append("button")
     document.body.removeChild(link);
   });
 
-// Toggle polygons button
+// Toggle planning areas
 let polygonsVisible = true;
 controlsContainer.append("button")
-  .text("✏️")
-  .style("padding", "12px")
-  .style("background", "#9b59b6")
-  .style("color", "#fff")
-  .style("border", "none")
-  .style("border-radius", "6px")
-  .style("cursor", "pointer")
-  .style("font-size", "18px")
-  .style("font-weight", "bold")
-  .style("width", "48px")
-  .style("height", "48px")
-  .attr("title", "Toggle Planning Areas")
+  .attr("class", "st-btn st-btn-ghost")
+  .text("Areas")
+  .attr("title", "Toggle planning areas")
   .on("click", function() {
+    const btn = d3.select(this);
     if (polygonsVisible) {
-      if (mapLayers.planningAreaPolygons) {
-        connectivityMap.removeLayer(mapLayers.planningAreaPolygons);
-      }
-      d3.select(this).style("opacity", "0.5").attr("title", "Show Planning Areas");
+      if (mapLayers.planningAreaPolygons) connectivityMap.removeLayer(mapLayers.planningAreaPolygons);
+      btn.classed("is-off", true);
       polygonsVisible = false;
     } else {
-      if (mapLayers.planningAreaPolygons) {
-        connectivityMap.addLayer(mapLayers.planningAreaPolygons);
-      }
-      d3.select(this).style("opacity", "1").attr("title", "Hide Planning Areas");
+      if (mapLayers.planningAreaPolygons) connectivityMap.addLayer(mapLayers.planningAreaPolygons);
+      btn.classed("is-off", false);
       polygonsVisible = true;
     }
   });
 
-// Bus stops toggle button
-let busStopsVisible = false; // Bus stops are hidden by default
+// Bus stops toggle
+let busStopsVisible = false;
 controlsContainer.append("button")
-  .text("🚌")
-  .style("padding", "12px")
-  .style("background", "#3498db")
-  .style("color", "#fff")
-  .style("border", "none")
-  .style("border-radius", "6px")
-  .style("cursor", "pointer")
-  .style("font-size", "18px")
-  .style("font-weight", "bold")
-  .style("width", "48px")
-  .style("height", "48px")
-  .style("opacity", "0.5")
-  .attr("title", "Show Bus Stops")
+  .attr("class", "st-btn st-btn-ghost is-off")
+  .text("Bus stops")
   .on("click", async function() {
+    const btn = d3.select(this);
     if (busStopsVisible) {
-      // Hide bus stops
-      if (mapLayers.busStops) {
-        connectivityMap.removeLayer(mapLayers.busStops);
-      }
-      d3.select(this).style("opacity", "0.5").attr("title", "Show Bus Stops");
+      if (mapLayers.busStops) connectivityMap.removeLayer(mapLayers.busStops);
+      btn.classed("is-off", true).text("Bus stops");
       busStopsVisible = false;
     } else {
-      // Show bus stops
-      d3.select(this).text("🔄").property("disabled", true).attr("title", "Loading...");
+      btn.text("Bus stops…").property("disabled", true);
       try {
         await displayBusStops();
-        d3.select(this).text("🚌").style("opacity", "1").property("disabled", false).attr("title", "Hide Bus Stops");
+        btn.classed("is-off", false).text("Bus stops").property("disabled", false);
         busStopsVisible = true;
       } catch (error) {
-        d3.select(this).text("❌").property("disabled", false).attr("title", "Error - Try Again");
+        btn.text("Bus stops · error").property("disabled", false);
       }
     }
   });
 
-// MRT stations toggle button
-let mrtStationsVisible = true; // MRT stations are shown by default
+// MRT stations toggle
+let mrtStationsVisible = true;
 controlsContainer.append("button")
-  .text("🚇")
-  .style("padding", "12px")
-  .style("background", "#9b59b6")
-  .style("color", "#fff")
-  .style("border", "none")
-  .style("border-radius", "6px")
-  .style("cursor", "pointer")
-  .style("font-size", "18px")
-  .style("font-weight", "bold")
-  .style("width", "48px")
-  .style("height", "48px")
-  .attr("title", "Toggle MRT Stations")
+  .attr("class", "st-btn st-btn-ghost")
+  .text("MRT")
   .on("click", async function() {
+    const btn = d3.select(this);
     if (mrtStationsVisible) {
-      // Hide MRT stations
-      if (mapLayers.mrtStations) {
-        connectivityMap.removeLayer(mapLayers.mrtStations);
-      }
-      d3.select(this).style("opacity", "0.5").attr("title", "Show MRT Stations");
+      if (mapLayers.mrtStations) connectivityMap.removeLayer(mapLayers.mrtStations);
+      btn.classed("is-off", true).text("MRT");
       mrtStationsVisible = false;
     } else {
-      // Show MRT stations
-      d3.select(this).text("🔄").property("disabled", true).attr("title", "Loading...");
+      btn.text("MRT…").property("disabled", true);
       try {
         await displayMRTStations();
-        d3.select(this).text("🚇").style("opacity", "1").property("disabled", false).attr("title", "Hide MRT Stations");
+        btn.classed("is-off", false).text("MRT").property("disabled", false);
         mrtStationsVisible = true;
       } catch (error) {
-        d3.select(this).text("❌").property("disabled", false).attr("title", "Error - Try Again");
+        btn.text("MRT · error").property("disabled", false);
       }
     }
   });
 
-// Taxis toggle button
-let taxisVisible = false; // Taxis are hidden by default
+// Taxis toggle
+let taxisVisible = false;
 controlsContainer.append("button")
-  .text("🚕")
-  .style("padding", "12px")
-  .style("background", "#f39c12")
-  .style("color", "#fff")
-  .style("border", "none")
-  .style("border-radius", "6px")
-  .style("cursor", "pointer")
-  .style("font-size", "18px")
-  .style("font-weight", "bold")
-  .style("width", "48px")
-  .style("height", "48px")
-  .style("opacity", "0.5")
-  .attr("title", "Show Taxis")
+  .attr("class", "st-btn st-btn-ghost is-off")
+  .text("Taxis")
   .on("click", async function() {
+    const btn = d3.select(this);
     if (taxisVisible) {
-      // Hide taxis
-      if (mapLayers.taxiAvailability) {
-        connectivityMap.removeLayer(mapLayers.taxiAvailability);
-      }
-      d3.select(this).style("opacity", "0.5").attr("title", "Show Taxis");
+      if (mapLayers.taxiAvailability) connectivityMap.removeLayer(mapLayers.taxiAvailability);
+      btn.classed("is-off", true).text("Taxis");
       taxisVisible = false;
     } else {
-      // Show taxis
-      d3.select(this).text("🔄").property("disabled", true).attr("title", "Loading...");
+      btn.text("Taxis…").property("disabled", true);
       try {
         await displayTaxis();
-        d3.select(this).text("🚕").style("opacity", "1").property("disabled", false).attr("title", "Hide Taxis");
+        btn.classed("is-off", false).text("Taxis").property("disabled", false);
         taxisVisible = true;
       } catch (error) {
-        d3.select(this).text("❌").property("disabled", false).attr("title", "Error - Try Again");
+        btn.text("Taxis · error").property("disabled", false);
       }
     }
   });
 
-// Carparks toggle button
-let carparksVisible = false; // Carparks are hidden by default
+// Carparks toggle
+let carparksVisible = false;
 controlsContainer.append("button")
-  .text("🅿️")
-  .style("padding", "12px")
-  .style("background", "#2ecc71")
-  .style("color", "#fff")
-  .style("border", "none")
-  .style("border-radius", "6px")
-  .style("cursor", "pointer")
-  .style("font-size", "18px")
-  .style("font-weight", "bold")
-  .style("width", "48px")
-  .style("height", "48px")
-  .style("opacity", "0.5")
-  .attr("title", "Show Carparks")
+  .attr("class", "st-btn st-btn-ghost is-off")
+  .text("Carparks")
   .on("click", async function() {
+    const btn = d3.select(this);
     if (carparksVisible) {
-      // Hide carparks
-      if (mapLayers.carparks) {
-        connectivityMap.removeLayer(mapLayers.carparks);
-      }
-      d3.select(this).style("opacity", "0.5").attr("title", "Show Carparks");
+      if (mapLayers.carparks) connectivityMap.removeLayer(mapLayers.carparks);
+      btn.classed("is-off", true).text("Carparks");
       carparksVisible = false;
     } else {
-      // Show carparks
-      d3.select(this).text("🔄").property("disabled", true).attr("title", "Loading...");
+      btn.text("Carparks…").property("disabled", true);
       try {
         await displayCarparks();
-        d3.select(this).text("🅿️").style("opacity", "1").property("disabled", false).attr("title", "Hide Carparks");
+        btn.classed("is-off", false).text("Carparks").property("disabled", false);
         carparksVisible = true;
       } catch (error) {
-        d3.select(this).text("❌").property("disabled", false).attr("title", "Error - Try Again");
+        btn.text("Carparks · error").property("disabled", false);
       }
     }
   });
 
-// reset view button
+// Reset view
 controlsContainer.append("button")
-  .text("✨ Reset View")
-  .style("padding", "12px 24px")
-  .style("background", "#e67e22")
-  .style("color", "#fff")
-  .style("border", "none")
-  .style("border-radius", "6px")
-  .style("cursor", "pointer")
-  .style("font-size", "14px")
-  .style("font-weight", "bold")
+  .attr("class", "st-btn st-btn-ghost")
+  .text("Reset view")
   .on("click", function() {
     clearAreaSelection();
   });
 
-//  methodology information
+// Methodology block — newspaper sidebar
 app3.append("div")
-  .style("margin-top", "30px")
-  .style("padding", "20px")
-  .style("background", "#1a1a2e")
-  .style("border-radius", "8px")
-  .style("border-left", "4px solid #3498db")
+  .attr("class", "st-method")
   .html(`
-    <h3 style="color: #3498db; margin: 0 0 15px 0;">📋 Methodology</h3>
-    <div style="color: #ddd; line-height: 1.6;">
-      <p><strong>Connectivity Index Calculation:</strong></p>
-      <ul>
-        <li><strong>MRT Stations (35%):</strong> Density of MRT stations within each area</li>
-        <li><strong>Bus Stops (30%):</strong> Density of bus stops relative to population</li>
-        <li><strong>Carparks (20%):</strong> Available parking facilities per capita</li>
-        <li><strong>Taxi Availability (15%):</strong> Real-time taxi density in each planning area</li>
-      </ul>
-      <p><strong>Scoring:</strong> Each component is scored 0-100, then weighted to produce the final connectivity index. 
-      Areas with scores 80+ are considered to have excellent connectivity, while scores below 20 indicate areas that need infrastructure improvement.</p>
-      
-      <p style="margin-top: 15px; font-size: 12px; color: #888;">
-        <strong>Data Sources:</strong> Singapore LTA DataMall • Data.gov.sg Transport APIs • URA Master Plan • Population Census
-      </p>
-    </div>
+    <h3>Methodology</h3>
+    <p><strong>Connectivity index calculation</strong></p>
+    <ul>
+      <li><strong>MRT stations (35%)</strong> · density of MRT stations within each area</li>
+      <li><strong>Bus stops (30%)</strong> · density of bus stops relative to population</li>
+      <li><strong>Carparks (20%)</strong> · parking facilities per capita</li>
+      <li><strong>Taxi availability (15%)</strong> · real-time taxi density in each planning area</li>
+    </ul>
+    <p>Each component is scored 0–100, then weighted to produce the final index. Areas above 80 are considered well-connected; below 20 suggests infrastructure gaps.</p>
+    <p class="st-method-source">Sources: LTA DataMall · data.gov.sg · URA Master Plan · SingStat</p>
   `);
 
 // Initialize the connectivity analysis

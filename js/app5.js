@@ -4,264 +4,93 @@
 (function() {
     console.log('=== SINGAPORE FLIGHT TRACKER INITIALIZATION ===');
     
-    // Add universal CSS styles for app5
+    // Performance hints only — visual styling lives in global.css
     const universalStyles = document.createElement('style');
     universalStyles.textContent = `
-        /* Flight tracker specific styles */
-        #flight-map5 {
-            will-change: transform;
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
+        #flight-map5 { will-change: transform; transform: translateZ(0); }
+        #flight-map5 .leaflet-popup-content-wrapper {
+            background: #0F1226 !important;
+            color: #E6ECF5;
+            border: 0 !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
         }
-        
-        .flight-marker {
-            will-change: transform, opacity;
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
-        }
-        
-        .flight-path {
-            stroke-width: 2;
-            opacity: 0.7;
-            transition: opacity 0.3s ease;
-        }
-        
-        .flight-path:hover {
-            opacity: 1;
-            stroke-width: 3;
-        }
-        
-        .airspace-boundary {
-            fill: rgba(255, 165, 0, 0.1);
-            stroke: #ffa500;
-            stroke-width: 2;
-            stroke-dasharray: 5,5;
-        }
-        
-        .loading-spinner {
-            border: 3px solid rgba(0, 188, 212, 0.3);
-            border-top: 3px solid #00bcd4;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .flight-info-popup {
-            background: rgba(26, 26, 46, 0.95);
-            border: 1px solid rgba(0, 188, 212, 0.5);
-            border-radius: 8px;
-            padding: 12px;
-            color: #ffffff;
-            font-size: 0.9rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-        }
-        
-        /* Override Leaflet popup default styles */
-        .leaflet-popup-content-wrapper {
-            background: transparent !important;
-            border-radius: 8px !important;
+        #flight-map5 .leaflet-popup-tip {
+            background: #0F1226 !important;
             box-shadow: none !important;
         }
-        
-        .leaflet-popup-content {
-            margin: 0 !important;
-            background: transparent !important;
+        #flight-map5 .leaflet-popup-close-button { color: #B7C0D2 !important; }
+        #flight-map5 .leaflet-control-zoom a {
+            background: rgba(255,255,255,0.92) !important;
+            color: #000 !important;
+            border-radius: 0 !important;
+            font-family: 'Roboto Condensed', Roboto, sans-serif !important;
+            font-weight: 700 !important;
         }
-        
-        .leaflet-popup-tip {
-            background: rgba(26, 26, 46, 0.95) !important;
-            border: 1px solid rgba(0, 188, 212, 0.5) !important;
-            box-shadow: none !important;
-        }
-        
-        .flight-controls {
-            background: rgba(26, 26, 46, 0.9);
-            border: 1px solid rgba(0, 188, 212, 0.3);
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
+        #flight-map5 .leaflet-control-zoom a:hover {
+            background: #fff !important;
+            color: var(--st-blue) !important;
         }
     `;
     document.head.appendChild(universalStyles);
 
-    // Initialize app container with aviation theme
+    // Initialize app container — chrome lives in ST figure wrapper
     const app5 = d3.select("#container5")
         .html("")
-        .style("position", "relative")
-        .style("padding", "0")
-        .style("background", "linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)")
-        .style("min-height", "100vh")
-        .style("overflow", "hidden")
-        .append("div")
-        .style("position", "relative")
-        .style("margin", "0 auto")
-        .style("padding", "20px")
-        .style("width", "100%")
-        .style("max-width", "1400px")
-        .style("background", "transparent");
-
-    // Title with aviation styling
-    const titleContainer = app5.append("div")
-        .style("text-align", "center")
-        .style("margin-bottom", "20px")
-        .style("position", "relative");
-
-    titleContainer.append("h1")
-        .style("color", "#ffffff")
-        .style("font-size", "2.5rem")
-        .style("font-weight", "300")
-        .style("margin", "0")
-        .style("text-shadow", "0 0 20px rgba(0, 188, 212, 0.4)")
-        .style("letter-spacing", "2px")
-        .html("✈️ Singapore Flight Tracker");
-
-    titleContainer.append("p")
-        .style("color", "#8892b0")
-        .style("font-size", "1.1rem")
-        .style("margin", "10px 0 0 0")
-        .style("font-weight", "300")
-        .text("Real-time visualization of flights entering and leaving Singapore airspace");
+        .classed("st-viz-card", true);
 
     // Controls container
     const controlsContainer5 = app5.append("div")
-        .attr("class", "flight-controls")
-        .style("position", "relative")
-        .style("z-index", "10")
-        .style("margin-bottom", "20px")
-        .style("padding", "20px")
-        .style("display", "flex")
-        .style("flex-wrap", "wrap")
-        .style("gap", "15px")
-        .style("align-items", "center");
+        .attr("class", "st-controls flight-controls");
 
     // Flight type filter
-    const flightTypeGroup = controlsContainer5.append("div")
-        .style("display", "flex")
-        .style("align-items", "center")
-        .style("gap", "8px");
-
-    flightTypeGroup.append("label")
-        .style("color", "#00bcd4")
-        .style("font-size", "0.9rem")
-        .style("font-weight", "500")
-        .text("Flight Type:");
-
+    const flightTypeGroup = controlsContainer5.append("div").attr("class", "st-filter-group");
+    flightTypeGroup.append("label").attr("class", "st-filter-label").text("Flight type");
     const flightTypeSelect = flightTypeGroup.append("select")
         .attr("id", "flight-type-filter")
-        .style("padding", "8px 12px")
-        .style("border-radius", "20px")
-        .style("border", "1px solid rgba(0, 188, 212, 0.3)")
-        .style("background", "rgba(26, 26, 46, 0.9)")
-        .style("color", "#00bcd4")
-        .style("font-size", "0.85rem")
-        .style("cursor", "pointer");
+        .attr("class", "st-select");
 
     // Airline filter
-    const airlineGroup = controlsContainer5.append("div")
-        .style("display", "flex")
-        .style("align-items", "center")
-        .style("gap", "8px");
-
-    airlineGroup.append("label")
-        .style("color", "#00bcd4")
-        .style("font-size", "0.9rem")
-        .style("font-weight", "500")
-        .text("Airline:");
-
+    const airlineGroup = controlsContainer5.append("div").attr("class", "st-filter-group");
+    airlineGroup.append("label").attr("class", "st-filter-label").text("Airline");
     const airlineSelect = airlineGroup.append("select")
         .attr("id", "airline-filter")
-        .style("padding", "8px 12px")
-        .style("border-radius", "20px")
-        .style("border", "1px solid rgba(0, 188, 212, 0.3)")
-        .style("background", "rgba(26, 26, 46, 0.9)")
-        .style("color", "#00bcd4")
-        .style("font-size", "0.85rem")
-        .style("cursor", "pointer");
+        .attr("class", "st-select");
 
     // API status indicator
     const apiStatusIndicator = controlsContainer5.append("div")
         .attr("id", "api-status")
-        .style("display", "flex")
-        .style("align-items", "center")
-        .style("gap", "8px")
-        .style("padding", "8px 12px")
-        .style("border-radius", "20px")
-        .style("border", "1px solid rgba(0, 188, 212, 0.3)")
-        .style("background", "rgba(26, 26, 46, 0.9)")
-        .style("font-size", "0.85rem");
+        .attr("class", "st-api-status");
 
     apiStatusIndicator.append("span")
         .attr("id", "status-indicator")
-        .style("width", "8px")
-        .style("height", "8px")
-        .style("border-radius", "50%")
-        .style("background", "#8892b0");
+        .attr("class", "st-api-dot");
 
     apiStatusIndicator.append("span")
         .attr("id", "status-text")
-        .style("color", "#8892b0")
-        .text("Initializing...");
+        .attr("class", "st-api-text")
+        .text("Initialising…");
 
-    // Update API status
+    // Update API status — toggles status class for styling
     const updateApiStatus = (status, message) => {
-        const colors = {
-            'live': '#4CAF50',  // Back to green
-            'sample': '#FF9800', 
-            'error': '#ff4757',
-            'loading': '#00bcd4'
-        };
-        
-        d3.select('#status-indicator')
-            .style('background', colors[status] || '#8892b0');
-            
-        d3.select('#status-text')
-            .style('color', colors[status] || '#8892b0')
-            .text(message);
+        const node = document.getElementById('api-status');
+        if (node) node.dataset.status = status;
+        d3.select('#status-text').text(message);
     };
 
     // Map container
     const mapContainer = app5.append("div")
         .attr("id", "flight-map5")
-        .style("height", "600px")
-        .style("position", "relative")
-        .style("z-index", "5")
-        .style("border-radius", "20px")
-        .style("border", "1px solid rgba(0, 188, 212, 0.3)")
-        .style("overflow", "hidden")
-        .style("background", "#1a1a2e");
+        .attr("class", "st-viz-map");
 
     // Flight statistics panel
     const statsContainer = app5.append("div")
         .attr("id", "flight-stats")
-        .style("position", "relative")
-        .style("z-index", "10")
-        .style("margin-top", "20px")
-        .style("padding", "20px")
-        .style("background", "rgba(26, 26, 46, 0.8)")
-        .style("border", "1px solid rgba(0, 188, 212, 0.3)")
-        .style("border-radius", "15px")
-        .style("backdrop-filter", "blur(10px)")
-        .style("color", "#ffffff");
+        .attr("class", "st-panel");
 
-    // Flight details panel (initially hidden)
+    // Flight details panel
     const detailsPanel = app5.append("div")
         .attr("id", "flight-details")
-        .style("position", "relative")
-        .style("z-index", "10")
-        .style("margin-top", "20px")
-        .style("padding", "20px")
-        .style("background", "rgba(26, 26, 46, 0.8)")
-        .style("border", "1px solid rgba(0, 188, 212, 0.3)")
-        .style("border-radius", "15px")
-        .style("backdrop-filter", "blur(10px)")
-        .style("color", "#ffffff")
+        .attr("class", "st-panel st-panel-light")
         .style("display", "none");
 
     // Global variables
@@ -271,38 +100,20 @@
     let updateInterval;
     let isLiveUpdateEnabled = true;
     
-    // Status update function - same as news visualization
+    // Toast notification (top-right). Styled by global.css (.st-toast).
     const showStatusUpdate = (message) => {
-        // Create or update status element
-        let statusElement = document.getElementById('news-api-status');
+        let statusElement = document.getElementById('st-toast');
         if (!statusElement) {
             statusElement = document.createElement('div');
-            statusElement.id = 'news-api-status';
-            statusElement.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: rgba(26, 26, 46, 0.95);
-                border: 1px solid rgba(100, 255, 218, 0.5);
-                border-radius: 8px;
-                padding: 10px 15px;
-                color: #64ffda;
-                font-size: 12px;
-                font-family: monospace;
-                z-index: 10000;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-                transition: opacity 0.3s ease;
-            `;
+            statusElement.id = 'st-toast';
+            statusElement.className = 'st-toast';
             document.body.appendChild(statusElement);
         }
-        
         statusElement.textContent = message;
-        statusElement.style.opacity = '1';
-        
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            statusElement.style.opacity = '0';
+        statusElement.classList.add('is-visible');
+        clearTimeout(statusElement._timer);
+        statusElement._timer = setTimeout(() => {
+            statusElement.classList.remove('is-visible');
         }, 5000);
     };
     
@@ -414,84 +225,103 @@
             scrollWheelZoom: true
         });
 
-        // Add dark tile layer for aviation theme
+        // Dark CARTO basemap — newspaper data-viz aesthetic
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &middot; &copy; OpenStreetMap contributors',
             subdomains: 'abcd',
             maxZoom: 19
         }).addTo(map);
 
-        // Add Singapore FIR boundary
+        // ST data palette for airspace zones
+        const ZONE_COLORS = {
+            fir:      '#E8B23A', // ochre — outermost FIR
+            tca:      '#3FB6C9', // teal — Terminal Control Area
+            ctr:      '#E2503B', // editorial red — immediate airport control
+            corridor: '#B488D6'  // lavender — traffic corridors
+        };
+
+        // Singapore FIR (outermost)
         const firPolygon = L.polygon(SINGAPORE_FIR, {
-            color: '#ffa500',
-            weight: 2,
-            opacity: 0.8,
-            fillColor: '#ffa500',
-            fillOpacity: 0.1,
-            dashArray: '10,10'
+            color: ZONE_COLORS.fir,
+            weight: 1.5,
+            opacity: 0.85,
+            fillColor: ZONE_COLORS.fir,
+            fillOpacity: 0.04,
+            dashArray: '10,8'
         }).addTo(map);
 
         firPolygon.bindPopup(`
-            <div class="flight-info-popup">
-                <strong>Singapore Flight Information Region (FIR)</strong><br>
-                Area: ~65,000 sq km<br>
-                Altitude: Surface to FL999<br>
-                Manages all air traffic in Singapore airspace
+            <div class="st-popup st-popup-dark flight-info-popup">
+                <div class="st-popup-eyebrow">Airspace · FIR</div>
+                <div class="st-popup-title">Singapore Flight Information Region</div>
+                <table class="st-popup-table">
+                    <tr><td>Area</td><td>~65,000 sq km</td></tr>
+                    <tr><td>Altitude</td><td>Surface to FL999</td></tr>
+                    <tr><td>Authority</td><td>Civil Aviation Authority of Singapore</td></tr>
+                </table>
+                <p class="st-popup-source">Manages all air traffic in Singapore airspace</p>
             </div>
         `);
 
-        // Add Singapore TCA boundary
+        // Terminal Control Area
         const tcaPolygon = L.polygon(SINGAPORE_TCA, {
-            color: '#00bcd4',
-            weight: 2,
+            color: ZONE_COLORS.tca,
+            weight: 1.5,
             opacity: 0.9,
-            fillColor: '#00bcd4',
-            fillOpacity: 0.15,
-            dashArray: '5,5'
+            fillColor: ZONE_COLORS.tca,
+            fillOpacity: 0.08,
+            dashArray: '6,4'
         }).addTo(map);
 
         tcaPolygon.bindPopup(`
-            <div class="flight-info-popup">
-                <strong>Singapore Terminal Control Area (TCA)</strong><br>
-                Altitude: Surface to FL195<br>
-                High-density airspace around major airports<br>
-                Strict air traffic control
+            <div class="st-popup st-popup-dark flight-info-popup">
+                <div class="st-popup-eyebrow">Airspace · TCA</div>
+                <div class="st-popup-title">Terminal Control Area</div>
+                <table class="st-popup-table">
+                    <tr><td>Altitude</td><td>Surface to FL195</td></tr>
+                    <tr><td>Coverage</td><td>High-density around major airports</td></tr>
+                </table>
+                <p class="st-popup-source">Strict air-traffic control</p>
             </div>
         `);
 
-        // Add Changi CTR boundary
+        // Changi CTR
         const ctrPolygon = L.polygon(CHANGI_CTR, {
-            color: '#ff6b6b',
-            weight: 2,
-            opacity: 0.9,
-            fillColor: '#ff6b6b',
-            fillOpacity: 0.1,
+            color: ZONE_COLORS.ctr,
+            weight: 1.5,
+            opacity: 0.95,
+            fillColor: ZONE_COLORS.ctr,
+            fillOpacity: 0.08,
             dashArray: '3,3'
         }).addTo(map);
 
         ctrPolygon.bindPopup(`
-            <div class="flight-info-popup">
-                <strong>Changi Control Traffic Region (CTR)</strong><br>
-                Altitude: Surface to 3,000 ft<br>
-                Immediate airport control zone<br>
-                All aircraft require clearance
+            <div class="st-popup st-popup-dark flight-info-popup">
+                <div class="st-popup-eyebrow">Airspace · CTR</div>
+                <div class="st-popup-title">Changi Control Traffic Region</div>
+                <table class="st-popup-table">
+                    <tr><td>Altitude</td><td>Surface to 3,000 ft</td></tr>
+                    <tr><td>Coverage</td><td>Immediate airport control zone</td></tr>
+                </table>
+                <p class="st-popup-source">All aircraft require clearance</p>
             </div>
         `);
 
-        // Add traffic corridors
+        // Traffic corridors
         TRAFFIC_CORRIDORS.forEach(corridor => {
             const corridorLine = L.polyline(corridor.path, {
-                color: '#9C27B0',
-                weight: 3,
-                opacity: 0.6,
-                dashArray: '15,10'
+                color: ZONE_COLORS.corridor,
+                weight: 2.5,
+                opacity: 0.7,
+                dashArray: '12,8'
             }).addTo(map);
 
             corridorLine.bindPopup(`
-                <div class="flight-info-popup">
-                    <strong>${corridor.name}</strong><br>
-                    ${corridor.direction}<br>
-                    Standard arrival/departure route
+                <div class="st-popup st-popup-dark flight-info-popup">
+                    <div class="st-popup-eyebrow">Traffic corridor</div>
+                    <div class="st-popup-title">${corridor.name}</div>
+                    <p class="st-popup-meta">${corridor.direction}</p>
+                    <p class="st-popup-source">Standard arrival / departure route</p>
                 </div>
             `);
         });
@@ -499,66 +329,61 @@
         // Add airspace legend
         const legend = L.control({position: 'bottomleft'});
         legend.onAdd = function (map) {
-            const div = L.DomUtil.create('div', 'airspace-legend');
+            const div = L.DomUtil.create('div', 'airspace-legend st-legend');
             div.innerHTML = `
-                <div style="
-                    background: rgba(26, 26, 46, 0.5);
-                    padding: 10px;
-                    border-radius: 8px;
-                    border: 1px solid rgba(0, 188, 212, 0.5);
-                    color: white;
-                    font-size: 12px;
-                    line-height: 1.4;
-                    backdrop-filter: blur(10px);
-                ">
-                    <strong style="color: #00bcd4;">Airspace Zones</strong><br>
-                    <span style="color: #ffa500;">━━━</span> Flight Information Region (FIR)<br>
-                    <span style="color: #00bcd4;">━━━</span> Terminal Control Area (TCA)<br>
-                    <span style="color: #ff6b6b;">━━━</span> Control Traffic Region (CTR)<br>
-                    <span style="color: #9C27B0;">━━━</span> Traffic Corridors<br><br>
-                    <strong style="color: #00bcd4;">Airports</strong><br>
-                    🛬 Changi International<br>
-                    🛩️ Seletar Airport
-                </div>
+                <div class="st-legend-title">Airspace zones</div>
+                <div class="st-legend-row"><span class="st-legend-swatch" style="background:${ZONE_COLORS.fir};"></span>Flight information region (FIR)</div>
+                <div class="st-legend-row"><span class="st-legend-swatch" style="background:${ZONE_COLORS.tca};"></span>Terminal control area (TCA)</div>
+                <div class="st-legend-row"><span class="st-legend-swatch" style="background:${ZONE_COLORS.ctr};"></span>Control traffic region (CTR)</div>
+                <div class="st-legend-row"><span class="st-legend-swatch" style="background:${ZONE_COLORS.corridor};"></span>Traffic corridors</div>
+                <div class="st-legend-title">Airports</div>
+                <div class="st-legend-row"><span class="st-legend-pin"></span>Changi International (SIN)</div>
+                <div class="st-legend-row"><span class="st-legend-pin"></span>Seletar (XSP)</div>
             `;
             return div;
         };
         legend.addTo(map);
 
-        // Add airport markers
-        const changiMarker = L.marker(CHANGI_AIRPORT, {
-            icon: L.divIcon({
-                className: 'airport-marker',
-                html: '🛬',
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
-            })
-        }).addTo(map);
+        // Airport markers — ST text pins
+        const makeAirportIcon = (code) => L.divIcon({
+            className: 'st-airport-marker',
+            html: `<span class="st-airport-pin"></span><span class="st-airport-label">${code}</span>`,
+            iconSize: [60, 22],
+            iconAnchor: [8, 11]
+        });
+
+        const changiMarker = L.marker(CHANGI_AIRPORT, { icon: makeAirportIcon('SIN') }).addTo(map);
 
         changiMarker.bindPopup(`
-            <div class="flight-info-popup">
-                <strong>Singapore Changi Airport (SIN)</strong><br>
-                ICAO: WSSS<br>
-                Major international hub<br>
-                4 terminals, 3 runways
+            <div class="st-popup st-popup-dark flight-info-popup">
+                <div class="st-popup-eyebrow">Airport</div>
+                <div class="st-popup-title">Singapore Changi (SIN)</div>
+                <table class="st-popup-table">
+                    <tr><td>ICAO</td><td>WSSS</td></tr>
+                    <tr><td>Type</td><td>Major international hub</td></tr>
+                    <tr><td>Facilities</td><td>4 terminals, 3 runways</td></tr>
+                </table>
             </div>
         `);
 
         const seletarMarker = L.marker(SELETAR_AIRPORT, {
             icon: L.divIcon({
-                className: 'airport-marker',
-                html: '🛩️',
+                className: 'st-airport-marker',
+                html: '<span class="st-airport-pin"></span><span class="st-airport-label">XSP</span>',
                 iconSize: [25, 25],
                 iconAnchor: [12, 12]
             })
         }).addTo(map);
 
         seletarMarker.bindPopup(`
-            <div class="flight-info-popup">
-                <strong>Seletar Airport (XSP)</strong><br>
-                ICAO: WSSL<br>
-                General aviation and charter flights<br>
-                Single runway
+            <div class="st-popup st-popup-dark flight-info-popup">
+                <div class="st-popup-eyebrow">Airport</div>
+                <div class="st-popup-title">Seletar (XSP)</div>
+                <table class="st-popup-table">
+                    <tr><td>ICAO</td><td>WSSL</td></tr>
+                    <tr><td>Type</td><td>General aviation, charter</td></tr>
+                    <tr><td>Facilities</td><td>Single runway</td></tr>
+                </table>
             </div>
         `);
 
@@ -1201,54 +1026,31 @@
         return 'Flying';
     };
 
-    // Create flight marker
+    // Create flight marker — triangle pointing along heading, ST palette
     const createFlightMarker = (flight) => {
         const isArrival = flight.type === 'arrival';
-        const icon = isArrival ? '🛬' : '🛫';
-        const color = isArrival ? '#4CAF50' : '#FF9800';  // Back to green for arrivals
         const isRealTime = !!flight.lastContact;
-        
-        // Add indicator for real-time vs simulated data
-        const borderColor = isRealTime ? (isArrival ? '#FF9800' : '#00ff00') : '#ffffff';  // Orange for arrivals, green for departures
-        const borderWidth = isRealTime ? '3px' : '2px';
+        // Newspaper data colours: arrival = teal, departure = ochre
+        const color = isArrival ? '#3FB6C9' : '#E8B23A';
+        const heading = (typeof flight.heading === 'number' ? flight.heading : 0);
 
         const marker = L.marker(flight.currentPosition, {
             icon: L.divIcon({
-                className: 'flight-marker',
-                html: `<div style="
-                    background: ${color};
-                    color: white;
-                    border-radius: 50%;
-                    width: 24px;
-                    height: 24px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 12px;
-                    border: ${borderWidth} solid ${borderColor};
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                    ${isRealTime ? 'animation: pulse 2s infinite;' : ''}
-                ">${icon}</div>
-                <style>
-                    @keyframes pulse {
-                        0% { box-shadow: 0 0 0 0 ${isArrival ? 'rgba(255, 152, 0, 0.7)' : 'rgba(0, 255, 0, 0.7)'}; }
-                        70% { box-shadow: 0 0 0 8px ${isArrival ? 'rgba(255, 152, 0, 0)' : 'rgba(0, 255, 0, 0)'}; }
-                        100% { box-shadow: 0 0 0 0 ${isArrival ? 'rgba(255, 152, 0, 0)' : 'rgba(0, 255, 0, 0)'}; }
-                    }
-                </style>`,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
+                className: `st-flight-marker ${isArrival ? 'is-arrival' : 'is-departure'} ${isRealTime ? 'is-live' : 'is-sim'}`,
+                html: `<svg viewBox="0 0 16 16" style="transform:rotate(${heading}deg);"><path d="M8 1 L13 14 L8 11 L3 14 Z" fill="${color}" stroke="rgba(255,255,255,0.9)" stroke-width="0.8" stroke-linejoin="round"/></svg>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
             }),
             title: flight.callsign
         });
 
-        // Add flight path
+        // Flight path
         const pathCoords = [flight.originCoords, flight.destinationCoords];
         const flightPath = L.polyline(pathCoords, {
             color: color,
-            weight: 2,
-            opacity: isRealTime ? 0.8 : 0.6,
-            dashArray: isRealTime ? '3,3' : '5,10'
+            weight: 1.2,
+            opacity: isRealTime ? 0.6 : 0.4,
+            dashArray: isRealTime ? '3,4' : '6,8'
         });
 
         const dataSource = isRealTime ? `LIVE - ${flight.apiSource || 'API'}` : 'SIMULATED';
@@ -1257,51 +1059,30 @@
             'Generated Data';
 
         marker.bindPopup(`
-            <div class="flight-info-popup">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <strong>${flight.callsign}</strong>
-                    <span style="
-                        background: ${isRealTime ? '#4CAF50' : '#FF9800'};
-                        color: white;
-                        padding: 2px 6px;
-                        border-radius: 10px;
-                        font-size: 0.7rem;
-                        font-weight: bold;
-                    ">${dataSource}</span>
-                </div>
-                <strong>Airline:</strong> ${flight.airlineName}<br>
-                <strong>Route:</strong> ${flight.origin} → ${flight.destination}<br>
-                <strong>Type:</strong> ${flight.type}<br>
-                <strong>Aircraft:</strong> ${flight.aircraftType}<br>
-                <strong>Altitude:</strong> ${(flight.altitude || 0).toLocaleString()} ft<br>
-                <strong>Speed:</strong> ${flight.speed} kts<br>
-                <strong>Heading:</strong> ${flight.heading}°<br>
-                <strong>Status:</strong> ${flight.status}<br>
-                ${flight.onGround ? '<strong style="color: #FF9800;">On Ground</strong><br>' : ''}
-                ${flight.verticalRate ? `<strong>Vertical Rate:</strong> ${flight.verticalRate > 0 ? '↗' : '↘'} ${Math.abs(flight.verticalRate)} ft/min<br>` : ''}
-                <strong>Country:</strong> ${flight.country || 'Unknown'}<br>
-                <div style="margin-top: 8px; font-size: 0.8rem; color: #8892b0;">
-                    ${lastUpdate}<br>
-                    Source: ${flight.apiSource || 'Unknown'}
-                </div>
+            <div class="st-popup flight-info-popup">
+                <div class="st-popup-eyebrow">${isArrival ? 'Arrival' : 'Departure'} · <span class="${isRealTime ? 'is-ok' : 'is-warn'}">${dataSource}</span></div>
+                <div class="st-popup-title">${flight.callsign}</div>
+                <table class="st-popup-table">
+                    <tr><td>Airline</td><td>${flight.airlineName}</td></tr>
+                    <tr><td>Route</td><td>${flight.origin} → ${flight.destination}</td></tr>
+                    <tr><td>Aircraft</td><td>${flight.aircraftType}</td></tr>
+                    <tr><td>Altitude</td><td>${(flight.altitude || 0).toLocaleString()} ft</td></tr>
+                    <tr><td>Speed</td><td>${flight.speed} kts</td></tr>
+                    <tr><td>Heading</td><td>${flight.heading}°</td></tr>
+                    <tr><td>Status</td><td>${flight.status}${flight.onGround ? ' · <span class="is-warn">On ground</span>' : ''}</td></tr>
+                    ${flight.verticalRate ? `<tr><td>Vertical rate</td><td>${flight.verticalRate > 0 ? '↗' : '↘'} ${Math.abs(flight.verticalRate)} ft/min</td></tr>` : ''}
+                    <tr><td>Country</td><td>${flight.country || 'Unknown'}</td></tr>
+                </table>
+                <p class="st-popup-source">${lastUpdate} · Source: ${flight.apiSource || 'Unknown'}</p>
             </div>
         `);
 
         // Add hover tooltip
         marker.bindTooltip(`
-            <div style="
-                background: rgba(26, 26, 46, 0.9);
-                color: #ffffff;
-                padding: 8px 12px;
-                border-radius: 8px;
-                font-size: 0.85rem;
-                line-height: 1.4;
-                border: 1px solid rgba(0, 188, 212, 0.7);
-                backdrop-filter: blur(10px);
-            ">
-                <strong style="color: #00bcd4;">${flight.callsign}</strong><br>
-                <span style="color: #8892b0;">From:</span> ${flight.origin}<br>
-                <span style="color: #8892b0;">To:</span> ${flight.destination}
+            <div class="st-flight-tooltip">
+                <strong>${flight.callsign}</strong>
+                <span>From ${flight.origin}</span>
+                <span>To ${flight.destination}</span>
             </div>
         `, {
             permanent: false,
@@ -1321,44 +1102,42 @@
     const showFlightDetails = (flight) => {
         const detailsPanel = d3.select('#flight-details');
         
+        const statusOk = flight.status === 'On Time';
         detailsPanel.style('display', 'block')
             .html(`
-                <h3 style="margin-top: 0; color: #00bcd4; font-weight: 300;">Flight Details: ${flight.callsign}</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                    <div style="padding: 15px; background: rgba(0, 188, 212, 0.1); border-radius: 10px;">
-                        <h4 style="color: #00bcd4; margin-top: 0;">Flight Information</h4>
-                        <p><strong>Airline:</strong> ${flight.airlineName} (${flight.airline})</p>
-                        <p><strong>Aircraft Type:</strong> ${flight.aircraftType}</p>
-                        <p><strong>Flight Type:</strong> ${flight.type}</p>
-                        <p><strong>Status:</strong> <span style="color: ${flight.status === 'On Time' ? '#4CAF50' : '#FF9800'}">${flight.status}</span></p>
-                    </div>
-                    <div style="padding: 15px; background: rgba(0, 188, 212, 0.1); border-radius: 10px;">
-                        <h4 style="color: #00bcd4; margin-top: 0;">Route Information</h4>
-                        <p><strong>Origin:</strong> ${flight.origin}</p>
-                        <p><strong>Destination:</strong> ${flight.destination}</p>
-                        <p><strong>Progress:</strong> ${(flight.progress * 100).toFixed(1)}%</p>
-                        <p><strong>ETA:</strong> ${(flight.estimatedTime || new Date()).toLocaleString()}</p>
-                    </div>
+                <div class="st-panel-eyebrow">Flight</div>
+                <h3 class="st-panel-title">${flight.callsign}</h3>
+                <div class="st-panel-grid">
+                    <section class="st-panel-section">
+                        <div class="st-panel-section-title">Flight information</div>
+                        <table class="st-panel-table">
+                            <tr><td>Airline</td><td>${flight.airlineName} (${flight.airline})</td></tr>
+                            <tr><td>Aircraft</td><td>${flight.aircraftType}</td></tr>
+                            <tr><td>Type</td><td>${flight.type}</td></tr>
+                            <tr><td>Status</td><td><span class="${statusOk ? 'is-ok' : 'is-warn'}">${flight.status}</span></td></tr>
+                        </table>
+                    </section>
+                    <section class="st-panel-section">
+                        <div class="st-panel-section-title">Route</div>
+                        <table class="st-panel-table">
+                            <tr><td>Origin</td><td>${flight.origin}</td></tr>
+                            <tr><td>Destination</td><td>${flight.destination}</td></tr>
+                            <tr><td>Progress</td><td>${(flight.progress * 100).toFixed(1)}%</td></tr>
+                            <tr><td>ETA</td><td>${(flight.estimatedTime || new Date()).toLocaleString()}</td></tr>
+                        </table>
+                    </section>
                 </div>
-                <div style="margin-top: 20px; padding: 15px; background: rgba(0, 188, 212, 0.1); border-radius: 10px;">
-                    <h4 style="color: #00bcd4; margin-top: 0;">Current Status</h4>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                        <p><strong>Altitude:</strong> ${(flight.altitude || 0).toLocaleString()} ft</p>
-                        <p><strong>Speed:</strong> ${flight.speed} knots</p>
-                        <p><strong>Heading:</strong> ${flight.heading}°</p>
-                        <p><strong>Position:</strong> ${flight.currentPosition[0].toFixed(4)}°N, ${flight.currentPosition[1].toFixed(4)}°E</p>
-                    </div>
-                </div>
-                <div style="text-align: center; margin-top: 20px;">
-                    <button onclick="d3.select('#flight-details').style('display', 'none')" style="
-                        padding: 10px 20px;
-                        background: rgba(0, 188, 212, 0.2);
-                        color: #00bcd4;
-                        border: 1px solid #00bcd4;
-                        border-radius: 20px;
-                        cursor: pointer;
-                        transition: all 0.3s ease;
-                    ">Close Details</button>
+                <section class="st-panel-section st-panel-section-wide">
+                    <div class="st-panel-section-title">Current position</div>
+                    <table class="st-panel-table st-panel-table-grid">
+                        <tr><td>Altitude</td><td>${(flight.altitude || 0).toLocaleString()} ft</td></tr>
+                        <tr><td>Speed</td><td>${flight.speed} knots</td></tr>
+                        <tr><td>Heading</td><td>${flight.heading}°</td></tr>
+                        <tr><td>Position</td><td>${flight.currentPosition[0].toFixed(4)}°N, ${flight.currentPosition[1].toFixed(4)}°E</td></tr>
+                    </table>
+                </section>
+                <div class="st-panel-actions">
+                    <button class="st-btn st-btn-ghost" onclick="d3.select('#flight-details').style('display', 'none')">Close</button>
                 </div>
             `);
     };
@@ -1419,54 +1198,23 @@
             .join(' • ');
 
         d3.select('#flight-stats').html(`
-            <h3 style="margin-top: 0; color: #00bcd4; font-weight: 300;">Live Flight Statistics</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
-                <div style="text-align: center; padding: 15px; background: rgba(0, 188, 212, 0.1); border-radius: 10px;">
-                    <div style="font-size: 2rem; color: #4CAF50;">🛬</div>
-                    <div style="font-size: 1.5rem; color: #00bcd4; font-weight: 500;">${arrivals}</div>
-                    <div style="color: #8892b0;">Arrivals</div>
-                </div>
-                <div style="text-align: center; padding: 15px; background: rgba(0, 188, 212, 0.1); border-radius: 10px;">
-                    <div style="font-size: 2rem; color: #FF9800;">🛫</div>
-                    <div style="font-size: 1.5rem; color: #00bcd4; font-weight: 500;">${departures}</div>
-                    <div style="color: #8892b0;">Departures</div>
-                </div>
-                <div style="text-align: center; padding: 15px; background: rgba(0, 188, 212, 0.1); border-radius: 10px;">
-                    <div style="font-size: 2rem; color: #00bcd4;">✈️</div>
-                    <div style="font-size: 1.5rem; color: #00bcd4; font-weight: 500;">${total}</div>
-                    <div style="color: #8892b0;">Total Flights</div>
-                </div>
-                <div style="text-align: center; padding: 15px; background: rgba(0, 188, 212, 0.1); border-radius: 10px;">
-                    <div style="font-size: 2rem; color: #9C27B0;">🏢</div>
-                    <div style="font-size: 1.5rem; color: #00bcd4; font-weight: 500;">${airlines}</div>
-                    <div style="color: #8892b0;">Airlines</div>
-                </div>
+            <div class="st-panel-eyebrow">Live flight statistics</div>
+            <h3 class="st-panel-title">${total} flights in the Singapore region</h3>
+            <div class="st-stat-grid">
+                <div class="st-stat"><div class="st-stat-value">${arrivals}</div><div class="st-stat-label">Arrivals</div></div>
+                <div class="st-stat"><div class="st-stat-value">${departures}</div><div class="st-stat-label">Departures</div></div>
+                <div class="st-stat"><div class="st-stat-value">${total}</div><div class="st-stat-label">Total flights</div></div>
+                <div class="st-stat"><div class="st-stat-value">${airlines}</div><div class="st-stat-label">Airlines</div></div>
             </div>
-            <div style="margin-top: 20px; padding: 15px; background: rgba(0, 188, 212, 0.1); border-radius: 10px;">
-                <h4 style="color: #00bcd4; margin-top: 0; text-align: center;">Flight Status Distribution</h4>
-                <div style="display: flex; justify-content: space-around; text-align: center;">
-                    <div>
-                        <div style="color: #4CAF50; font-size: 1.2rem; font-weight: 500;">${onTime}</div>
-                        <div style="color: #8892b0; font-size: 0.9rem;">On Time</div>
-                    </div>
-                    <div>
-                        <div style="color: #FF9800; font-size: 1.2rem; font-weight: 500;">${delayed}</div>
-                        <div style="color: #8892b0; font-size: 0.9rem;">Delayed</div>
-                    </div>
-                    <div>
-                        <div style="color: #2196F3; font-size: 1.2rem; font-weight: 500;">${total - onTime - delayed}</div>
-                        <div style="color: #8892b0; font-size: 0.9rem;">Other</div>
-                    </div>
-                </div>
-            </div>
-            <div style="margin-top: 15px; padding: 10px; background: rgba(0, 188, 212, 0.05); border-radius: 10px;">
-                <div style="color: #00bcd4; font-size: 0.85rem; font-weight: 500; margin-bottom: 5px;">Data Sources:</div>
-                <div style="color: #8892b0; font-size: 0.8rem;">${sourceInfo}</div>
-            </div>
-            <div style="margin-top: 15px; text-align: center; color: #8892b0; font-size: 0.9rem;">
-                Last updated: ${new Date().toLocaleTimeString()}
-                ${isLiveUpdateEnabled ? ' • Live' : ' • Offline'}
-            </div>
+            <section class="st-panel-section">
+                <div class="st-panel-section-title">Status distribution</div>
+                <table class="st-panel-table st-panel-table-grid">
+                    <tr><td><span class="is-ok">On time</span></td><td>${onTime}</td></tr>
+                    <tr><td><span class="is-warn">Delayed</span></td><td>${delayed}</td></tr>
+                    <tr><td>Other</td><td>${total - onTime - delayed}</td></tr>
+                </table>
+            </section>
+            <p class="st-panel-foot">Sources: ${sourceInfo}. Last updated ${new Date().toLocaleTimeString()}${isLiveUpdateEnabled ? ' · Live' : ' · Offline'}.</p>
         `);
     };
 
@@ -1507,7 +1255,7 @@
                 if (currentFilters.airline !== 'all' && flight.airline !== currentFilters.airline) return false;
                 return true;
             }).length;
-            showStatusUpdate(`🔍 Filtered: ${filteredCount} ${typeText} flights from ${airlineText}`);
+            showStatusUpdate(`Filtered to ${filteredCount} ${typeText} flights · ${airlineText}`);
         });
 
         airlineSelect.on('change', function() {
@@ -1522,7 +1270,7 @@
                 if (currentFilters.airline !== 'all' && flight.airline !== currentFilters.airline) return false;
                 return true;
             }).length;
-            showStatusUpdate(`🔍 Filtered: ${filteredCount} ${typeText} flights from ${airlineText}`);
+            showStatusUpdate(`Filtered to ${filteredCount} ${typeText} flights · ${airlineText}`);
         });
     };
 
@@ -1567,9 +1315,9 @@
                         // Show status update for real-time refresh
                         const newFlights = realTimeFlights.filter(f => !existingFlightMap.has(f.id));
                         if (newFlights.length > 0) {
-                            showStatusUpdate(`✈️ ${newFlights.length} New Flights Detected`);
+                            showStatusUpdate(`${newFlights.length} new flights detected`);
                         } else {
-                            showStatusUpdate(`✈️ Flight positions updated (${realTimeFlights.length} flights)`);
+                            showStatusUpdate(`Flight positions updated · ${realTimeFlights.length} flights`);
                         }
                         
                         // Update airline data
@@ -1606,14 +1354,14 @@
     const loadFlightData = async () => {
         console.log('Loading flight data...');
         
-        updateApiStatus('loading', 'Loading...');
+        updateApiStatus('loading', 'Loading…');
         
         // Show loading indicator
         d3.select('#flight-stats').html(`
-            <div style="text-align: center; padding: 50px;">
-                <div class="loading-spinner"></div>
-                <div style="margin-top: 15px; color: #00bcd4;">Loading real-time flight data...</div>
-                <div style="margin-top: 5px; color: #8892b0; font-size: 0.8rem;">Fetching from OpenSky Network API</div>
+            <div class="st-panel-loading">
+                <span class="st-spinner"></span>
+                <div>Loading real-time flight data…</div>
+                <small>Fetching from OpenSky Network API</small>
             </div>
         `);
 
@@ -1625,45 +1373,39 @@
             if (realTimeFlights && realTimeFlights.length > 0) {
                 console.log(`Successfully loaded ${realTimeFlights.length} real-time flights`);
                 flightData = realTimeFlights;
-                updateApiStatus('live', `Live • ${realTimeFlights.length} flights`);
-                
+                updateApiStatus('live', `Live · ${realTimeFlights.length} flights`);
+
                 // Show status update
-                showStatusUpdate(`✈️ Flight Tracker Updated with ${realTimeFlights.length} Live Flights`);
-                
+                showStatusUpdate(`Flight tracker updated · ${realTimeFlights.length} live flights`);
+
+                // Update figure-source "Last updated" stamp
+                const stamp = document.getElementById('flights-last-updated');
+                if (stamp) stamp.textContent = `${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })} SGT · ${realTimeFlights.length} flights`;
+
                 // Add airlines from real-time data
                 realTimeFlights.forEach(flight => {
                     if (flight.airline) {
                         airlineData.add(flight.airline);
                     }
                 });
-                
+
             } else {
                 throw new Error('No real-time flights available');
             }
-            
+
         } catch (realTimeError) {
             console.warn('Real-time API failed:', realTimeError.message);
-            
-            updateApiStatus('error', 'API Failed');
+
+            updateApiStatus('error', 'API failed');
+            const stamp = document.getElementById('flights-last-updated');
+            if (stamp) stamp.textContent = 'API unavailable';
             
             // Show API error message
             d3.select('#flight-stats').html(`
-                <div style="text-align: center; padding: 50px;">
-                    <div style="color: #FF9800; margin-bottom: 15px;">⚠️ Real-time API Unavailable</div>
-                    <div style="color: #8892b0; font-size: 0.9rem; margin-bottom: 15px;">
-                        ${realTimeError.message}<br>
-                        Unable to load live flight data. Please try again later.
-                    </div>
-                    <button onclick="loadFlightData()" style="
-                        padding: 10px 20px;
-                        background: rgba(0, 188, 212, 0.2);
-                        color: #00bcd4;
-                        border: 1px solid #00bcd4;
-                        border-radius: 20px;
-                        cursor: pointer;
-                        transition: all 0.3s ease;
-                    ">Retry</button>
-                </div>
+                <div class="st-panel-eyebrow">Live flight statistics</div>
+                <h3 class="st-panel-title">Real-time API unavailable</h3>
+                <p class="st-panel-meta">${realTimeError.message}. Unable to load live flight data. Please try again later.</p>
+                <div class="st-panel-actions"><button class="st-btn" onclick="loadFlightData()">Retry</button></div>
             `);
             
             // Don't load any fallback data - only show live data
@@ -1694,18 +1436,10 @@
         } catch (error) {
             console.error('Error initializing flight tracker:', error);
             d3.select('#flight-stats').html(`
-                <div style="text-align: center; padding: 50px; color: #ff4757;">
-                    <h3>Error Loading Flight Tracker</h3>
-                    <p>Unable to initialize the flight tracking system.</p>
-                    <button onclick="location.reload()" style="
-                        padding: 10px 20px;
-                        background: #ff4757;
-                        color: white;
-                        border: none;
-                        border-radius: 20px;
-                        cursor: pointer;
-                    ">Retry</button>
-                </div>
+                <div class="st-panel-eyebrow">Flight tracker</div>
+                <h3 class="st-panel-title">Could not load the flight tracker</h3>
+                <p class="st-panel-meta">Unable to initialise the flight tracking system.</p>
+                <div class="st-panel-actions"><button class="st-btn st-btn-accent" onclick="location.reload()">Reload</button></div>
             `);
         }
     };

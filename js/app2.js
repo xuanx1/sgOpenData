@@ -1,30 +1,12 @@
 // Initialize app2 container (second map)
 const app2 = d3.select("#app2")
   .html("")
-  .style("position", "relative")  // Changed from fixed to relative
-  .style("margin-top", "20px")    // Add some space from the first map
-  .style("padding", "30px")
-  .append("div")
-  .style("margin", "0 auto")
-  .style("padding", "20px")
-  .style("border-radius", "10px")
-  .style("width", "100%")
-  .style("max-width", "900px")
-  .style("background", "#0c0c1c")
-  .style("box-shadow", "0px 0px 2px hsla(0,0%,0%,0.2)");
-
-// Title for second map
-app2.append("h1")
-  .style("color", "#eee")
-  .style("font-size", "1.2rem")
-  .style("margin-bottom", "12px")
-  .text("🚕 Where's My Taxi?");
+  .classed("st-viz-card", true);
 
 // Map container for second map
 const mapElement2 = app2.append("div")
-  .attr("id", "map2")  // Changed ID to avoid conflicts
-  .style("height", "520px")
-  .style("border-radius", "8px");
+  .attr("id", "map2")
+  .attr("class", "st-viz-map");
 
 // Create second map centered on Singapore
 const map2 = L.map(mapElement2.node(), {
@@ -47,45 +29,34 @@ L.tileLayer("https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
 let taxiMarkers = L.layerGroup(); // Layer group for taxi markers
 let heatLayer; // Variable to store heat map layer
 
-// Add buttons for toggling markers and heatmap
-const markerToggleButton = app2.append("button")
-  .text("Hide Taxi Points")
-  .style("margin-top", "20px")
-  .style("padding", "10px 20px")
-  .style("background", "#ffd000")
-  .style("color", "#745e00ff")
-  .style("border", "none")
-  .style("border-radius", "5px")
-  .style("cursor", "pointer")
-  .style("margin-right", "10px")
+// Toolbar wrapper
+const taxiToolbar = app2.append("div").attr("class", "st-viz-toolbar");
+
+const markerToggleButton = taxiToolbar.append("button")
+  .attr("class", "st-btn")
+  .text("Hide taxi points")
   .on("click", () => {
     if (map2.hasLayer(taxiMarkers)) {
       map2.removeLayer(taxiMarkers);
-      markerToggleButton.text("Show Taxi Points");
+      markerToggleButton.text("Show taxi points");
     } else {
       map2.addLayer(taxiMarkers);
-      markerToggleButton.text("Hide Taxi Points");
+      markerToggleButton.text("Hide taxi points");
     }
   });
 
-const heatMapToggleButton = app2.append("button")
-  .text("Show Taxi Heat Map")
-  .style("margin-top", "20px")
-  .style("padding", "10px 20px")
-  .style("background", "#ff7700")
-  .style("color", "#fff")
-  .style("border", "none")
-  .style("border-radius", "5px")
-  .style("cursor", "pointer")
+const heatMapToggleButton = taxiToolbar.append("button")
+  .attr("class", "st-btn st-btn-accent")
+  .text("Show taxi heat map")
   .on("click", () => {
     if (!heatLayer) return;
-    
+
     if (map2.hasLayer(heatLayer)) {
       map2.removeLayer(heatLayer);
-      heatMapToggleButton.text("Show Heat Map");
+      heatMapToggleButton.text("Show heat map");
     } else {
       map2.addLayer(heatLayer);
-      heatMapToggleButton.text("Hide Heat Map");
+      heatMapToggleButton.text("Hide heat map");
     }
   });
 
@@ -135,14 +106,14 @@ function fetchTaxiData() {
         // Add point to heat map data
         heatData.push([lat, lng, 0.5]); // lat, lng, intensity
         
-        // Create a circle marker (yellow dot) for each taxi
+        // ST-navy dot for each taxi
         L.circleMarker([lat, lng], {
           radius: 4,
-          fillColor: '#ffd000ff',
-          color: '#000',
-          weight: 0.1,
+          fillColor: '#1A3A6C',
+          color: '#ffffff',
+          weight: 0.8,
           opacity: 1,
-          fillOpacity: 0.5
+          fillOpacity: 0.7
         }).addTo(taxiMarkers);
       });
       
@@ -206,26 +177,19 @@ const addGoogleTrafficLayer2 = () => {
 };
 
 // Add button to toggle traffic layer for second map
-const trafficToggleButton2 = app2.append("button")
-  .text("Loading Traffic Data...")
-  .style("margin-top", "20px")
-  .style("margin-left", "10px")
-  .style("padding", "10px 20px")
-  .style("background", "#00be9d")
-  .style("color", "#fff")
-  .style("border", "none")
-  .style("border-radius", "5px")
-  .style("cursor", "pointer")
+const trafficToggleButton2 = taxiToolbar.append("button")
+  .attr("class", "st-btn st-btn-ghost")
+  .text("Loading traffic data…")
   .property("disabled", true)
   .on("click", () => {
     if (!window.trafficLayer2) return;
-    
+
     if (map2.hasLayer(window.trafficLayer2)) {
       map2.removeLayer(window.trafficLayer2);
-      trafficToggleButton2.text("Show Traffic Data");
+      trafficToggleButton2.text("Show traffic data");
     } else {
       map2.addLayer(window.trafficLayer2);
-      trafficToggleButton2.text("Hide Traffic Data");
+      trafficToggleButton2.text("Hide traffic data");
     }
   });
 
@@ -236,25 +200,14 @@ addGoogleTrafficLayer2();
 
 
 
-// Function to update description text with real data
+// Update the figure-source "Last updated" stamp
 function updateDescriptionText(taxiCount, status, timestamp) {
-  const descriptionElement = document.getElementById('taxi-description');
-  if (descriptionElement) {
-    const now = new Date();
-    const nextUpdate = new Date(now.getTime() + 30000); // 30 seconds from now
-    descriptionElement.innerHTML = `This map shows real-time taxi availability across Singapore. Toggle the buttons above to view different visualizations of taxi distribution. Currently displaying <span style='color:#ffd000; font-weight:bold;'>${taxiCount}</span> taxis with the operational status designated as <span style='color:#ffd000; font-weight:bold;'>${status}</span>. Accurate as at <span style='color:#ffd000; font-weight:bold;'>${new Date(timestamp).toLocaleString()}</span>. <br><small style='color:#888;'>Last updated: ${now.toLocaleTimeString()} • Next update: ${nextUpdate.toLocaleTimeString()}</small>`;
+  const stamp = document.getElementById('taxi-last-updated');
+  if (stamp) {
+    const ts = new Date(timestamp || Date.now()).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+    stamp.textContent = `${ts} SGT · ${taxiCount} taxis · ${status}`;
   }
 }
-
-// description text
-app2.append("p")
-  .attr("id", "taxi-description")
-  .style("color", "#ddd")
-  .style("font-size", "0.9rem")
-  .style("margin-top", "15px")
-  .style("margin-bottom", "15px")
-  .style("line-height", "1.5")
-  .html("This map shows real-time taxi availability across Singapore. Loading taxi data... Toggle the buttons above to view different visualizations of taxi distribution.");
 
 
 

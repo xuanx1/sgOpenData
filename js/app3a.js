@@ -36,44 +36,18 @@ function initializeLampPostVisualization() {
   // Initialize app3a container (lamp post map)
   app3a = d3.select("#app3a")
     .html("")
-    .style("position", "relative")
-    .style("margin-top", "20px")
-    .style("padding", "30px")
-    .append("div")
-    .style("margin", "0 auto")
-    .style("padding", "20px")
-    .style("border-radius", "10px")
-    .style("width", "100%")
-    .style("max-width", "900px")
-    .style("background", "#0c0c1c")
-    .style("box-shadow", "0px 0px 2px hsla(0,0%,0%,0.2)");
-
-  // Title for lamp post map
-  app3a.append("h1")
-    .style("color", "#ffeb3b")
-    .style("font-size", "1.2rem")
-    .style("margin-bottom", "12px")
-    .text("🔦 Singapore Street Lighting Network");
+    .classed("st-viz-card", true);
 
   // Status indicator
   statusDiv3a = app3a.append("div")
     .attr("id", "lamp-status")
-    .style("background", "#1a1a1a")
-    .style("color", "#ffeb3b")
-    .style("padding", "8px 16px")
-    .style("border-radius", "6px")
-    .style("margin-bottom", "16px")
-    .style("text-align", "center")
-    .style("font-weight", "500")
-    .style("font-size", "0.9rem")
-    .style("border", "1px solid #333")
-    .text("🔦 Initializing lamp post data...");
+    .attr("class", "st-badge")
+    .text("Initialising lamp post data…");
 
   // Map container for lamp post map
   const mapContainer = app3a.append("div")
     .attr("id", "lamp-map")
-    .style("height", "520px")
-    .style("border-radius", "8px");
+    .attr("class", "st-viz-map");
 
   // Create lamp post map centered on Singapore
   lampPostMap3a = L.map('lamp-map', {
@@ -121,7 +95,7 @@ function createDarkOverlay() {
 // Load lamp post data from GeoJSON
 async function loadLampPostData() {
   try {
-    statusDiv3a.text("🔦 Loading lamp post data from LTA...");
+    statusDiv3a.attr("class", "st-badge").text("Loading lamp post data from LTA…");
     
     const response = await fetch('data/LTALampPost.geojson');
     if (!response.ok) {
@@ -171,18 +145,21 @@ async function loadLampPostData() {
     console.log(`📊 Loaded ${lampPostData3a.length} lamp posts (filtered from ${geoJsonData.features.length} total)`);
     
     statusDiv3a
-      .style("color", "#ffeb3b")
-      .style("background", "#2e2a1a")
-      .text(`✅ Loaded ${lampPostData3a.length} lamp posts successfully`);
-    
+      .attr("class", "st-badge st-badge-success")
+      .text(`Loaded ${lampPostData3a.length.toLocaleString()} lamp posts`);
+
+    const stamp = document.getElementById('lamps-status-line');
+    if (stamp) stamp.textContent = `Loaded ${lampPostData3a.length.toLocaleString()} lamp posts`;
+
     return lampPostData3a;
-    
+
   } catch (error) {
     console.error('Error loading lamp post data:', error);
     statusDiv3a
-      .style("color", "#f44336")
-      .style("background", "#2e1a1a")
-      .text(`❌ Error loading lamp post data: ${error.message}`);
+      .attr("class", "st-badge st-badge-error")
+      .text(`Could not load lamp post data — ${error.message}`);
+    const stamp = document.getElementById('lamps-status-line');
+    if (stamp) stamp.textContent = 'Failed to load';
     throw error;
   }
 }
@@ -298,38 +275,20 @@ async function displayLampPosts() {
         icon: lampIcon
       });
       
-      // Create popup content
+      // Create popup content — ST popup card
+      const powerLabel = lamp.powerLevel.charAt(0).toUpperCase() + lamp.powerLevel.slice(1);
       const popupContent = `
-        <div style="
-          font-family: Arial, sans-serif; 
-          min-width: 200px; 
-          background: #1a1a1a; 
-          color: #eee; 
-          padding: 12px; 
-          border-radius: 8px;
-          border: 1px solid ${powerConfig.color};
-        ">
-          <h4 style="margin: 0 0 10px 0; color: ${powerConfig.color};">
-            🔦 Lamp Post ${lamp.lampPostNumber}
-          </h4>
-          <div style="margin-bottom: 6px;">
-            <strong>Power Level:</strong> ${lamp.powerLevel.charAt(0).toUpperCase() + lamp.powerLevel.slice(1)}
-          </div>
-          <div style="margin-bottom: 6px;">
-            <strong>Illumination Radius:</strong> ${powerConfig.radius}m
-          </div>
-          <div style="margin-bottom: 6px;">
-            <strong>Light Intensity:</strong> ${Math.round(powerConfig.intensity * 100)}%
-          </div>
-          ${lamp.uniqueId ? `<div style="margin-bottom: 6px;">
-            <strong>Unique ID:</strong> ${lamp.uniqueId}
-          </div>` : ''}
-          <div style="font-size: 12px; color: #ccc; margin-top: 8px;">
-            📍 ${lamp.latitude.toFixed(6)}, ${lamp.longitude.toFixed(6)}
-          </div>
-          ${lamp.lastUpdated ? `<div style="font-size: 11px; color: #999; margin-top: 6px;">
-            Last updated: ${formatDate(lamp.lastUpdated)}
-          </div>` : ''}
+        <div class="st-popup st-popup-dark">
+          <div class="st-popup-eyebrow">Lamp post</div>
+          <div class="st-popup-title">No. ${lamp.lampPostNumber}</div>
+          <table class="st-popup-table">
+            <tr><td>Power level</td><td>${powerLabel}</td></tr>
+            <tr><td>Illumination radius</td><td>${powerConfig.radius} m</td></tr>
+            <tr><td>Light intensity</td><td>${Math.round(powerConfig.intensity * 100)}%</td></tr>
+            ${lamp.uniqueId ? `<tr><td>Unique ID</td><td>${lamp.uniqueId}</td></tr>` : ''}
+          </table>
+          <p class="st-popup-meta">${lamp.latitude.toFixed(6)}, ${lamp.longitude.toFixed(6)}</p>
+          ${lamp.lastUpdated ? `<p class="st-popup-source">Last updated ${formatDate(lamp.lastUpdated)}</p>` : ''}
         </div>
       `;
       
@@ -348,18 +307,16 @@ async function displayLampPosts() {
     });
     
     statusDiv3a
-      .style("color", "#ffeb3b")
-      .style("background", "#2e2a1a")
-      .text(`✨ Displaying ${plotted} lamp posts with illumination coverage`);
-    
-    console.log(`🔦 Plotted ${plotted} lamp posts with illumination radius`);
-    
+      .attr("class", "st-badge st-badge-success")
+      .text(`Displaying ${plotted.toLocaleString()} lamp posts with illumination coverage`);
+
+    console.log(`Plotted ${plotted} lamp posts with illumination radius`);
+
   } catch (error) {
     console.error('Error displaying lamp posts:', error);
     statusDiv3a
-      .style("color", "#f44336")
-      .style("background", "#2e1a1a")
-      .text(`❌ Error displaying lamp posts: ${error.message}`);
+      .attr("class", "st-badge st-badge-error")
+      .text(`Could not display lamp posts — ${error.message}`);
   }
 }
 
@@ -408,24 +365,12 @@ function highlightLampPost(lamp, marker) {
 
 // Create control panel
 function createControlPanel() {
-  const controlsContainer = app3a.append("div")
-    .style("margin-top", "16px")
-    .style("display", "flex")
-    .style("gap", "10px")
-    .style("justify-content", "center")
-    .style("flex-wrap", "wrap");
+  const controlsContainer = app3a.append("div").attr("class", "st-viz-toolbar");
 
   // Reset view button
   controlsContainer.append("button")
-    .text("🎯 Reset")
-    .style("padding", "8px 16px")
-    .style("background", "#ffeb3b")
-    .style("color", "#1a1a1a")
-    .style("border", "none")
-    .style("border-radius", "6px")
-    .style("cursor", "pointer")
-    .style("font-size", "12px")
-    .style("font-weight", "bold")
+    .attr("class", "st-btn")
+    .text("Reset view")
     .on("click", function() {
       lampPostMap3a.setView([1.3521, 103.8198], 11);
       selectedLampPost3a = null;
@@ -434,17 +379,8 @@ function createControlPanel() {
 
 // Create statistics panel
 function createStatisticsPanel() {
-  const statsContainer = app3a.append("div")
-    .style("margin-top", "16px")
-    .style("display", "flex")
-    .style("gap", "12px")
-    .style("justify-content", "space-around")
-    .style("background", "#1a1a1a")
-    .style("padding", "12px")
-    .style("border-radius", "8px")
-    .style("border", "1px solid #333");
+  const statsContainer = app3a.append("div").attr("class", "st-stat-grid");
 
-  // Calculate statistics
   const powerLevelCounts = {
     dim: lampPostData3a.filter(l => l.powerLevel === 'dim').length,
     normal: lampPostData3a.filter(l => l.powerLevel === 'normal').length,
@@ -456,75 +392,41 @@ function createStatisticsPanel() {
     return total + (Math.PI * radius * radius);
   }, 0);
 
-  // Total lamps stat
-  statsContainer.append("div")
-    .style("text-align", "center")
-    .style("flex", "1")
-    .html(`
-      <div style="color: #ffeb3b; font-size: 1.2rem; font-weight: bold;">${lampPostData3a.length.toLocaleString()}</div>
-      <div style="color: #bbb; font-size: 0.8rem;">Lamp Posts</div>
-    `);
+  statsContainer.append("div").attr("class", "st-stat").html(`
+    <div class="st-stat-value">${lampPostData3a.length.toLocaleString()}</div>
+    <div class="st-stat-label">Lamp posts</div>
+  `);
 
-  // Coverage area stat
-  statsContainer.append("div")
-    .style("text-align", "center")
-    .style("flex", "1")
-    .html(`
-      <div style="color: #ffeb3b; font-size: 1.2rem; font-weight: bold;">${(totalIlluminatedArea / 1000000).toFixed(1)}km²</div>
-      <div style="color: #bbb; font-size: 0.8rem;">Coverage</div>
-    `);
+  statsContainer.append("div").attr("class", "st-stat").html(`
+    <div class="st-stat-value">${(totalIlluminatedArea / 1000000).toFixed(1)} km²</div>
+    <div class="st-stat-label">Coverage</div>
+  `);
 
-  // Power distribution stat  
-  statsContainer.append("div")
-    .style("text-align", "center")
-    .style("flex", "1")
-    .html(`
-      <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 4px;">
-        <span style="color: #ffa500; font-size: 0.9rem; font-weight: bold;">${powerLevelCounts.dim}</span>
-        <span style="color: #ffeb3b; font-size: 0.9rem; font-weight: bold;">${powerLevelCounts.normal}</span>
-        <span style="color: #ffffff; font-size: 0.9rem; font-weight: bold;">${powerLevelCounts.bright}</span>
-      </div>
-      <div style="color: #bbb; font-size: 0.8rem;">Dim | Normal | Bright</div>
-    `);
-}
-
-// Add simple footer
-function createFooter() {
-  app3a.append("p")
-    .style("color", "#666")
-    .style("font-size", "0.7rem")
-    .style("margin-top", "16px")
-    .style("text-align", "center")
-    .style("font-style", "italic")
-    .html("🔦 Singapore's Lamp Posts, Mapped");
+  statsContainer.append("div").attr("class", "st-stat").html(`
+    <div class="st-stat-value">${powerLevelCounts.dim} · ${powerLevelCounts.normal} · ${powerLevelCounts.bright}</div>
+    <div class="st-stat-label">Dim · Normal · Bright</div>
+  `);
 }
 
 // Initialize the application
 async function startLampPostVisualization() {
   try {
-    console.log('🚀 Starting lamp post visualization...');
-    
-    // Initialize components
+    console.log('Starting lamp post visualization...');
+
     initializeLampPostVisualization();
-    
-    // Load and display data
     await loadLampPostData();
     await displayLampPosts();
-    
-    // Create UI components
     createControlPanel();
     createStatisticsPanel();
-    createFooter();
-    
-    console.log('✅ Lamp post visualization ready!');
+
+    console.log('Lamp post visualization ready');
     
   } catch (error) {
     console.error('❌ Error starting lamp post visualization:', error);
     if (statusDiv3a) {
       statusDiv3a
-        .style("color", "#f44336")
-        .style("background", "#2e1a1a")
-        .text(`❌ Initialization failed: ${error.message}`);
+        .attr("class", "st-badge st-badge-error")
+        .text(`Initialisation failed — ${error.message}`);
     }
   }
 }

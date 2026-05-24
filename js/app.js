@@ -1,29 +1,12 @@
-// Initialize app container
+// Initialize app container (chrome lives in the ST figure wrapper in index.html)
 const app = d3.select("#app")
   .html("")
-  .style("position", "relative")  // Changed from fixed to relative
-  .style("padding", "30px")
-  .append("div")
-  .style("margin", "0 auto")
-  .style("padding", "20px")
-  .style("border-radius", "10px")
-  .style("width", "100%")
-  .style("max-width", "900px")
-  .style("background", "#0c0c1c")
-  .style("box-shadow", "0px 0px 2px hsla(0,0%,0%,0.2)");
-
-// Title
-app.append("h1")
-  .style("color", "#eee")
-  .style("font-size", "1.2rem")
-  .style("margin-bottom", "12px")
-  .text("🚘 Singapore HDB Parking-Traffic Map");
+  .classed("st-viz-card", true);
 
 // Map container
 const mapElement = app.append("div")
   .attr("id", "map")
-  .style("height", "520px")
-  .style("border-radius", "8px");
+  .attr("class", "st-viz-map");
 
 // Create map centered on Singapore
 const map = L.map(mapElement.node(), {
@@ -150,29 +133,24 @@ let carparks = [];
 // Create global variable for carpark layer
 let carparkLayer = null;
 
-// Create custom garage icon
-// Create function to get parking icon based on availability
+// Carpark pin: bold square with a 'P' — newspaper data style.
+// Fill colour reflects availability (red / amber / green semantics).
 const getParkingIcon = (availabilityPercent) => {
-  // Determine color based on availability percentage
-  let color;
-  if (availabilityPercent <= 20) {
-    color = "#e74c3c"; // Red for low availability
-  } else if (availabilityPercent <= 50) {
-    color = "#f39c12"; // Yellow for medium availability
-  } else {
-    color = "#27ae60"; // Green for high availability
-  }
-  
+  let color, level;
+  if (availabilityPercent <= 20) { color = '#B91C1C'; level = 'low'; }
+  else if (availabilityPercent <= 50) { color = '#B45309'; level = 'medium'; }
+  else { color = '#1F6E3C'; level = 'high'; }
+
   return L.divIcon({
-    html: `<svg width="10" height="10" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M7.20938 0.0931333C7.38323 -0.0310444 7.61677 -0.0310444 7.79062 0.0931333L14.7906 5.09313C14.922 5.18699 15 5.33852 15 5.5V14.5C15 14.7761 14.7761 15 14.5 15H13V7H2V15H0.5C0.223858 15 0 14.7761 0 14.5V5.5C0 5.33852 0.0779828 5.18699 0.209381 5.09313L7.20938 0.0931333Z" fill="${color}"/>
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M3 15H12V11H3V15ZM9 13H6V12H9V13Z" fill="${color}"/>
-            <path d="M12 10V8H3V10H12Z" fill="${color}"/>
+    html: `<svg width="22" height="26" viewBox="0 0 22 26" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="1" width="20" height="20" rx="2" fill="${color}" stroke="#ffffff" stroke-width="1.5"/>
+            <path d="M11 21 L8 25 L14 25 Z" fill="${color}" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+            <text x="11" y="16" text-anchor="middle" font-family="'Roboto Condensed', 'Arial Narrow', sans-serif" font-size="14" font-weight="700" fill="#ffffff">P</text>
           </svg>`,
-    className: 'garage-icon',
-    iconSize: [28, 28],
-    iconAnchor: [14, 28],
-    popupAnchor: [0, -28]
+    className: `st-carpark-pin st-carpark-pin--${level}`,
+    iconSize: [22, 26],
+    iconAnchor: [11, 25],
+    popupAnchor: [0, -25]
   });
 };
 
@@ -201,8 +179,8 @@ const refreshCarparksData = async () => {
       });
       
       // Determine color based on availability
-      const barColor = availabilityPercent <= 20 ? '#e74c3c' : 
-                      availabilityPercent <= 50 ? '#f39c12' : '#27ae60';
+      const barColor = availabilityPercent <= 20 ? '#B91C1C' :
+                      availabilityPercent <= 50 ? '#B45309' : '#1F6E3C';
       
       // Create popup with availability info, progress bar, and parking rates
       const popup = `
@@ -242,20 +220,16 @@ const refreshCarparksData = async () => {
     if (!map.hasLayer(carparkLayer)) {
       // Only add if toggle button shows "Show Carparks" (meaning it's currently hidden)
       const buttonText = carparkToggleButton.text();
-      if (buttonText === "Hide Carparks") {
+      if (buttonText === "Hide carparks") {
         map.addLayer(carparkLayer);
       }
     }
     
     console.log(`Refreshed data for ${carparks.length} carparks`);
     
-    // Update status display
-    const statusElement = document.getElementById('data-refresh-status');
-    if (statusElement) {
-      const now = new Date();
-      const nextCarparksUpdate = new Date(now.getTime() + 60000);
-      statusElement.innerHTML = `Carpark data: Last updated ${now.toLocaleTimeString()} • Next update ${nextCarparksUpdate.toLocaleTimeString()}. Traffic cameras refresh every 2 minutes`;
-    }
+    // Update the figure-source "Last updated" stamp
+    const stamp = document.getElementById('parking-last-updated');
+    if (stamp) stamp.textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' SGT';
   } catch (error) {
     console.error("Error refreshing carpark data:", error);
   }
@@ -275,58 +249,34 @@ const refreshCarparksData = async () => {
     });
     
     // Determine color based on availability
-    const barColor = availabilityPercent <= 20 ? '#e74c3c' : 
-                    availabilityPercent <= 50 ? '#f39c12' : '#27ae60';
+    const barColor = availabilityPercent <= 20 ? '#B91C1C' :
+                    availabilityPercent <= 50 ? '#B45309' : '#1F6E3C';
     
     // Create popup with availability info, progress bar, and parking rates
     const popup = `
-      <div style="min-width: 220px">
-        <b>🅿️ ${cp.name}</b>
-        <p style="margin: 5px 0; font-size: 0.9em; color: #818181ff">${cp.address}</p>
-        <div style="margin: 8px 0;">
-          <div style="display: flex; align-items: center; gap: 5px;">
-            <div style="flex-grow: 1; background-color: #eee; height: 10px; border-radius: 5px;">
-              <div style="width: ${availabilityPercent}%; background-color: ${barColor}; height: 100%; border-radius: 5px;"></div>
-            </div>
-            <span style="color: ${barColor}; font-weight: bold;">${availabilityPercent}%</span>
+      <div class="st-popup">
+        <div class="st-popup-eyebrow">Carpark</div>
+        <div class="st-popup-title">${cp.name}</div>
+        <p class="st-popup-meta">${cp.address}</p>
+        <div class="st-popup-bar">
+          <div class="st-popup-bar-track">
+            <div class="st-popup-bar-fill" style="width:${availabilityPercent}%;background:${barColor};"></div>
           </div>
-          <div style="margin-top: 5px; color: #818181ff">
-            Lots Available: ${cp.lots} / ${cp.total}
-          </div>
+          <span class="st-popup-bar-value" style="color:${barColor};">${availabilityPercent}%</span>
         </div>
-        <div style="margin-top: 8px; border-top: 1px solid #eee; padding-top: 8px;">
-          <h4 style="margin: 0 0 5px 0; font-size: 1em; color: #818181ff;">Parking Rates:</h4>          <br>
-          <h4 style="margin: 0 0 5px 0; font-size: 0.9em; color: #ff7300ff">Motor Car</h4>
-          <table style="width: 100%; font-size: 0.85em;">
-            <tr>
-              <td style="padding: 2px 0;"><b>Weekdays:</b></td>
-              <td style="padding: 2px 0;">60¢ / 30 min</td>
-            </tr>
-            <tr>
-              <td style="padding: 2px 0;"><b>Saturday:</b></td>
-              <td style="padding: 2px 0;">60¢ / 30 min</td>
-            </tr>
-            <tr>
-              <td style="padding: 2px 0;"><b>Sun/Holiday:</b></td>
-              <td style="padding: 2px 0;">60¢ / 30 min</td>
-            </tr>
+        <div class="st-popup-meta">Lots available: ${cp.lots} / ${cp.total}</div>
+        <div class="st-popup-section">
+          <div class="st-popup-section-label">Parking rates · Motor car</div>
+          <table class="st-popup-table">
+            <tr><td>Weekdays</td><td>60¢ / 30 min</td></tr>
+            <tr><td>Saturday</td><td>60¢ / 30 min</td></tr>
+            <tr><td>Sun / Holiday</td><td>60¢ / 30 min</td></tr>
           </table>
-          <br>
-          <h4 style="margin: 0 0 2px 0; font-size: 0.9em; color: #ff7300ff">Motorcycle</h4>
-
-          <table style="width: 100%; font-size: 0.85em;">
-            <tr>
-              <td style="padding: 2px 0;"><b>Weekdays:</b></td>
-              <td style="padding: 2px 0;">20¢ / 60 min</td>
-            </tr>
-            <tr>
-              <td style="padding: 2px 0;"><b>Saturday:</b></td>
-              <td style="padding: 2px 0;">20¢ / 60 min</td>
-            </tr>
-            <tr>
-              <td style="padding: 2px 0;"><b>Sun/Holiday:</b></td>
-              <td style="padding: 2px 0;">20¢ / 60 min</td>
-            </tr>
+          <div class="st-popup-section-label">Motorcycle</div>
+          <table class="st-popup-table">
+            <tr><td>Weekdays</td><td>20¢ / 60 min</td></tr>
+            <tr><td>Saturday</td><td>20¢ / 60 min</td></tr>
+            <tr><td>Sun / Holiday</td><td>20¢ / 60 min</td></tr>
           </table>
         </div>
       </div>`;
@@ -338,33 +288,29 @@ const refreshCarparksData = async () => {
   
   // Update the carpark toggle button state
   carparkToggleButton.property("disabled", false);
-  carparkToggleButton.text("Hide Carparks");
+  carparkToggleButton.text("Hide carparks");
   
   // Set up auto-refresh for carpark data every 60 seconds
   setInterval(refreshCarparksData, 60000); // 60000ms = 60 seconds
 })();
 
+// Toolbar wrapper for buttons
+const parkingToolbar = app.append("div").attr("class", "st-viz-toolbar");
+
 // Add button to toggle carpark layer
-const carparkToggleButton = app.append("button")
-  .text("Loading Carparks...")
-  .style("margin-top", "20px")
-  .style("margin-right", "20px")
-  .style("padding", "10px 20px")
-  .style("background", "#0787ffff")
-  .style("color", "#fff")
-  .style("border", "none")
-  .style("border-radius", "5px")
-  .style("cursor", "pointer")
+const carparkToggleButton = parkingToolbar.append("button")
+  .attr("class", "st-btn")
+  .text("Loading carparks…")
   .property("disabled", true)
   .on("click", () => {
     if (!carparkLayer) return;
     
     if (map.hasLayer(carparkLayer)) {
       map.removeLayer(carparkLayer);
-      carparkToggleButton.text("Show Carparks");
+      carparkToggleButton.text("Show carparks");
     } else {
       map.addLayer(carparkLayer);
-      carparkToggleButton.text("Hide Carparks");
+      carparkToggleButton.text("Hide carparks");
     }
   });
 
@@ -377,7 +323,7 @@ let cameraLayer = null;
 // Live Traffic Cameras from LTA
 const fetchTrafficCameras = async () => {
   const cameraIcon = L.divIcon({
-    html: `<div style="background-color: #ff2424c0; width: 7px; height: 7px; border-radius: 50%; box-shadow: 0 0 0px #000;"></div>`,
+    html: `<div style="background-color: #1A3A6C; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(26,58,108,0.30);"></div>`,
     className: 'camera-icon',
     iconSize: [10, 10],
     iconAnchor: [5, 5],
@@ -391,12 +337,12 @@ const fetchTrafficCameras = async () => {
   cameraLayer = L.layerGroup();
   data.items[0].cameras.forEach(cam => {
     const marker = L.marker([cam.location.latitude, cam.location.longitude], {icon: cameraIcon});
-    const popup = `<div>
-      👀 Camera ID ${cam.camera_id}
-      <br>
-      <span id="address-${cam.camera_id}">Loading address...</span><br/><br>
-      <small style="color: #666;">Image captured on ${new Date(cam.timestamp).toLocaleString()}</small><br/>
-      <img src="${cam.image}" style="width:100%;border-radius:6px;"/>
+    const popup = `<div class="st-popup">
+      <div class="st-popup-eyebrow">Traffic camera</div>
+      <div class="st-popup-title">Camera ${cam.camera_id}</div>
+      <p class="st-popup-meta" id="address-${cam.camera_id}">Loading address…</p>
+      <img class="st-popup-image" src="${cam.image}" alt="Traffic camera feed"/>
+      <p class="st-popup-source">Captured ${new Date(cam.timestamp).toLocaleString()}</p>
     </div>`;
     
     // Add event to fetch address when popup opens
@@ -406,13 +352,11 @@ const fetchTrafficCameras = async () => {
       const data = await response.json();
       const address = data.display_name || "Address not found";
       const addressElement = document.getElementById(`address-${cam.camera_id}`);
-      addressElement.style.color = "#e74c3c";
-      addressElement.style.fontWeight = "bold"; 
+      addressElement.classList.add("is-loaded");
       addressElement.innerText = address;
       } catch (error) {
       const addressElement = document.getElementById(`address-${cam.camera_id}`);
-      addressElement.style.color = "#999";
-      addressElement.style.fontWeight = "bold"; 
+      addressElement.classList.add("is-error");
       addressElement.innerText = "Could not load address";
       console.error("Error fetching address:", error);
       }
@@ -430,26 +374,20 @@ setInterval(fetchTrafficCameras, 120000); // 120000ms = 2 minutes
 
 
 //button to toggle traffic cameras
-const toggleButton = app.append("button")
-  .text("Hide Traffic Cameras")
-  .style("margin-top", "20px")
-  .style("padding", "10px 20px")
-  .style("background", "#e74c3c")
-  .style("color", "#fff")
-  .style("border", "none")
-  .style("border-radius", "5px")
-  .style("cursor", "pointer")
+const toggleButton = parkingToolbar.append("button")
+  .attr("class", "st-btn st-btn-accent")
+  .text("Hide traffic cameras")
   .on("click", () => {
     if (cameraLayer && map.hasLayer(cameraLayer)) {
       map.removeLayer(cameraLayer);
-      toggleButton.text("Show Traffic Cameras");
+      toggleButton.text("Show traffic cameras");
     } else {
       if (!cameraLayer) {
         fetchTrafficCameras();
       } else {
         map.addLayer(cameraLayer);
       }
-      toggleButton.text("Hide Traffic Cameras");
+      toggleButton.text("Hide traffic cameras");
     }
   });
 
@@ -477,33 +415,26 @@ const addGoogleTrafficLayer = () => {
     
     
     // toggle button
-    trafficToggleButton.text("Show Traffic");
+    trafficToggleButton.text("Show traffic");
     trafficToggleButton.property("disabled", false);
-    
+
   };
 };
 
 // Add button to toggle traffic layer
-const trafficToggleButton = app.append("button")
-  .text("Loading Traffic Data...")
-  .style("margin-top", "20px")
-  .style("margin-left", "20px")
-  .style("padding", "10px 20px")
-  .style("background", "#00be9d")
-  .style("color", "#fff")
-  .style("border", "none")
-  .style("border-radius", "5px")
-  .style("cursor", "pointer")
+const trafficToggleButton = parkingToolbar.append("button")
+  .attr("class", "st-btn st-btn-ghost")
+  .text("Loading traffic data…")
   .property("disabled", true)
   .on("click", () => {
     if (!window.trafficLayer) return;
-    
+
     if (map.hasLayer(window.trafficLayer)) {
       map.removeLayer(window.trafficLayer);
-      trafficToggleButton.text("Show Traffic Data");
+      trafficToggleButton.text("Show traffic data");
     } else {
       map.addLayer(window.trafficLayer);
-      trafficToggleButton.text("Hide Traffic Data");
+      trafficToggleButton.text("Hide traffic data");
     }
   });
 
@@ -511,61 +442,28 @@ const trafficToggleButton = app.append("button")
 addGoogleTrafficLayer();
 
 
-// Add text below map
-// Display the timestamp of the last traffic camera update
-const cameraTimestampDisplay = app.append("p")
-  .attr("id", "camera-timestamp-display")
-  .style("color", "#ddd")
-  .style("font-size", "0.9rem")
-  .style("margin-top", "15px")
-  .style("margin-bottom", "10px")
-  .text("Loading traffic camera data...");
-
-// Function to fetch and display the camera timestamp
+// Update the figure-source "Last updated" stamp once camera data lands
 const fetchCameraTimestamp = async () => {
   try {
     const response = await fetch("https://api.data.gov.sg/v1/transport/traffic-images");
     const data = await response.json();
-    if (data && data.items && data.items[0] && data.items[0].cameras && data.items[0].cameras.length > 0) {
-      const timestamp = data.items[0].cameras[0].timestamp;
-      const formattedTime = new Date(timestamp).toLocaleString();
-      const cameraCount = data.items[0].cameras.length;
-      const carparkCount = carparks.length || 0;
-      
-      cameraTimestampDisplay.html(`Navigate Singapore's urban landscape with this comprehensive traffic and parking tool, providing real-time data on <span style="color:#0787ff;font-weight:bold">${carparkCount} </span> HDB carparks and <span style="color:#e74c3c;font-weight:bold">${cameraCount}</span> traffic cameras. Toggle between different information layers using the buttons below to customize your view and make informed travel decisions across the city. Accurate as at <span style="color:#00be9d;font-weight:bold">${formattedTime}</span>`);
-    } else {
-      cameraTimestampDisplay.text("No traffic camera data available");
+    if (data?.items?.[0]?.cameras?.length) {
+      const formatted = new Date(data.items[0].cameras[0].timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' SGT';
+      const stamp = document.getElementById('parking-last-updated');
+      if (stamp) stamp.textContent = formatted;
     }
   } catch (error) {
     console.error("Error fetching camera timestamp:", error);
-    cameraTimestampDisplay.text("Could not retrieve traffic camera update time");
   }
 };
 
-// Call fetchCameraTimestamp after carparks data is loaded
 (async () => {
-  // Wait for carparks data to be loaded
-  const checkCarparksLoaded = () => {
-    if (carparks && carparks.length > 0) {
-      fetchCameraTimestamp();
-    } else {
-      setTimeout(checkCarparksLoaded, 1000); // Check again in 1 second
-    }
+  const check = () => {
+    if (carparks && carparks.length > 0) fetchCameraTimestamp();
+    else setTimeout(check, 1000);
   };
-  
-  checkCarparksLoaded();
+  check();
 })();
-
-
-
-// Data refresh status display
-const dataRefreshStatus = app.append("p")
-  .attr("id", "data-refresh-status")
-  .style("color", "#888")
-  .style("font-size", "0.75rem")
-  .style("margin-bottom", "15px")
-  .style("font-style", "italic")
-  .html("Carpark data refreshes every 60 seconds • Traffic cameras refresh every 2 minutes");
 
 // // Made with love footer
 // app.append("p")
